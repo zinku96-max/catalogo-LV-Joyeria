@@ -433,12 +433,13 @@
       "stock": 0
     },
     {
-      "title": "Nuevo producto",
-      "price": 0,
-      "image": "",
+      "title": "Manill Panel de abeja",
+      "price": 65,
+      "image": "https://drive.google.com/file/d/1Ps-OQTYyo1XlG_oJNam8P3BVXjsSr9Lp/view?usp=sharing",
       "category": "otros",
       "visible": true,
-      "stock": 0
+      "stock": 1,
+      "sku": "ID68"
     },
     {
       "sku": "ID69",
@@ -451,21 +452,21 @@
     },
     {
       "sku": "ID71",
-      "title": "SnBenitoRojo",
+      "title": "San Benito Rojo",
       "price": 65,
       "image": "https://drive.google.com/file/d/1m9wA-I1FJD8yCdoT8O7DZArMUMURh-Fq/view?usp=sharing",
       "category": "pulseras a mano",
       "visible": true,
-      "stock": 0
+      "stock": 1
     },
     {
       "sku": "ID72",
-      "title": "Clave Dorado",
+      "title": "Clove Dorado",
       "price": 70,
       "image": "https://drive.google.com/file/d/1AxMBVXHKBqGr5g1kFRAIPZucW3RgD0Bi/view?usp=sharing",
       "category": "pulseras a mano",
       "visible": true,
-      "stock": 0
+      "stock": 1
     },
     {
       "sku": "ID73",
@@ -474,16 +475,16 @@
       "image": "https://drive.google.com/file/d/1o-iWvq-r7v2Cri2m7G8oK2gjukmmKc4x/view?usp=sharing",
       "category": "pulseras a mano",
       "visible": true,
-      "stock": 0
+      "stock": 1
     },
     {
       "sku": "ID74",
-      "title": "ManillsRolex",
+      "title": "Manilla Rolex",
       "price": 70,
       "image": "https://drive.google.com/file/d/1uYPFDlWZatIITtfQTYGch06tWQto9hIJ/view?usp=sharing",
       "category": "pulseras a mano",
       "visible": true,
-      "stock": 0
+      "stock": 3
     }
   ]
 }
