@@ -76,7 +76,7 @@
       "id": null,
       "title": "63002 - CLOVER BLANCO 1 CMS",
       "price": 15,
-      "image": "https://drive.google.com/uc?export=view&id=1SbrnP50SQrTw8qtbug0g0nZUscrAsNgx",
+      "image": "https://drive.google.com/file/d/14-i1BrXmnoSE5yhiBeima5_wZ1B0KmFR/view?usp=sharing",
       "category": "Dije",
       "visible": true,
       "stock": 0
@@ -443,11 +443,47 @@
     {
       "sku": "ID69",
       "title": "Manilla proteccion herraje",
-      "price": 0,
+      "price": 65,
       "image": "https://drive.google.com/file/d/1Iug9XON4p7goHtBjvOIMGSJA8I7ERlzk/view?usp=sharing",
       "category": "pulseras a mano",
       "visible": true,
       "stock": 2
+    },
+    {
+      "sku": "ID71",
+      "title": "SnBenitoRojo",
+      "price": 65,
+      "image": "https://drive.google.com/file/d/1m9wA-I1FJD8yCdoT8O7DZArMUMURh-Fq/view?usp=sharing",
+      "category": "pulseras a mano",
+      "visible": true,
+      "stock": 0
+    },
+    {
+      "sku": "ID72",
+      "title": "Clave Dorado",
+      "price": 70,
+      "image": "https://drive.google.com/file/d/1AxMBVXHKBqGr5g1kFRAIPZucW3RgD0Bi/view?usp=sharing",
+      "category": "pulseras a mano",
+      "visible": true,
+      "stock": 0
+    },
+    {
+      "sku": "ID73",
+      "title": "P Clove Negro",
+      "price": 65,
+      "image": "https://drive.google.com/file/d/1o-iWvq-r7v2Cri2m7G8oK2gjukmmKc4x/view?usp=sharing",
+      "category": "pulseras a mano",
+      "visible": true,
+      "stock": 0
+    },
+    {
+      "sku": "ID74",
+      "title": "ManillsRolex",
+      "price": 70,
+      "image": "https://drive.google.com/file/d/1uYPFDlWZatIITtfQTYGch06tWQto9hIJ/view?usp=sharing",
+      "category": "pulseras a mano",
+      "visible": true,
+      "stock": 0
     }
   ]
 }
