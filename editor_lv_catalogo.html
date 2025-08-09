@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Editor de Catálogo — Lady Vanessa Joyería ✨ (v1.3)</title>
+<title>Editor de Catálogo — Lady Vanessa Joyería ✨ (v1.3.1)</title>
 <meta name="description" content="Editor visual para lv_catalog_products.json">
 <style>
   :root{ --bg:#fffbea; --card:#fff; --ink:#1b1b1b; --muted:#6b6b6b; --ring:rgba(0,0,0,.07); --accent:#111; --warn:#b00020; --ok:#008a2a; }
@@ -18,8 +18,8 @@
   }
   .btn{appearance:none;border:1px solid #e5e5e5;border-radius:10px;padding:9px 12px;background:#111;color:#fff;cursor:pointer}
   .btn.secondary{background:#fff;color:#111}
-  .btn.warn{background:var(--warn);color:#fff;border-color:var(--warn)}
-  .btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+  .btn.warn{background:#b00020;color:#fff;border-color:#b00020}
+  .btn.ok{background:#008a2a;color:#fff;border-color:#008a2a}
   .grid{overflow:auto;border-radius:14px;border:1px solid #eee;background:#fff}
   table{width:100%;min-width:1400px;border-collapse:collapse;font-size:14px}
   th, td{padding:10px;border-bottom:1px solid #f0f0f0;vertical-align:top;white-space:nowrap}
@@ -35,11 +35,14 @@
   .ok{background:#f1fff3;border:1px solid #c7ffd2;color:#008a2a;border-radius:12px;padding:12px;margin:12px 0;display:none}
   @media (max-width:840px){ .two{grid-template-columns:1fr} th:nth-child(6), td:nth-child(6){min-width:220px} }
   .tiny{font-size:12px;color:#999}
+  label.s{font-size:13px;color:#777;display:flex;align-items:center;gap:6px}
+  .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111;color:#fff;border-radius:10px;padding:10px 14px;opacity:0;transition:opacity .2s, transform .2s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
 </style>
 </head>
 <body>
 <header>
-  <h1>Editor de Catálogo — Lady Vanessa Joyería ✨ <span class="tiny">(v1.3)</span></h1>
+  <h1>Editor de Catálogo — Lady Vanessa Joyería ✨ <span class="tiny">(v1.3.1)</span></h1>
   <div><span class="pill">Admin local</span> <span class="muted">Edita y descarga el JSON</span></div>
 </header>
 
@@ -56,17 +59,21 @@
 
   <div class="panel">
     <input id="search" type="text" placeholder="Buscar…">
-    <select id="filterCat"><option value="*">Todas las categorías</option></select>
+    <label class="s">Filtrar por
+      <select id="filterCat"><option value="*">Todas las categorías</option></select>
+    </label>
     <label class="muted"><input id="showHidden" type="checkbox"> Mostrar ocultos</label>
-    <select id="defaultCat">
-      <option value="pulseras a mano" selected>Pulseras a mano</option>
-      <option value="aretes">Aretes</option>
-      <option value="dije">Dije</option>
-      <option value="cadena">Cadena</option>
-      <option value="pulsera">Pulsera</option>
-      <option value="collar">Collar</option>
-      <option value="otros">Otros</option>
-    </select>
+    <label class="s">Cat. para nuevos
+      <select id="defaultCat">
+        <option value="pulseras a mano" selected>Pulseras a mano</option>
+        <option value="aretes">Aretes</option>
+        <option value="dije">Dije</option>
+        <option value="cadena">Cadena</option>
+        <option value="pulsera">Pulsera</option>
+        <option value="collar">Collar</option>
+        <option value="otros">Otros</option>
+      </select>
+    </label>
     <button class="btn" id="add">Añadir producto (cat. por defecto)</button>
     <button class="btn secondary" id="export">Descargar JSON (con fecha)</button>
     <button class="btn secondary" id="convertDrive">🪄 Arreglar todos los links de Drive</button>
@@ -123,6 +130,8 @@
 
 </div>
 
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
 <script>
 // ---------- Utilidades ----------
 function normalizeCategory(c){
@@ -136,8 +145,6 @@ function normalizeCategory(c){
   if(c.startsWith('pulsera')) return 'pulsera';
   return c;
 }
-
-// Drive + fallback (igual que el catálogo público)
 function driveIdFromUrl(u){
   try{
     if(u.includes('/file/d/')) return u.split('/d/')[1].split('/')[0];
@@ -148,22 +155,19 @@ function driveIdFromUrl(u){
 function imageCandidates(u){
   if(!u) return [];
   const id = driveIdFromUrl(u);
-  if(id){
-    return [
-      `https://drive.google.com/uc?export=view&id=${id}`,
-      `https://drive.google.com/thumbnail?id=${id}&sz=w1600`,
-      u
-    ];
-  }
+  if(id){ return [
+    `https://drive.google.com/uc?export=view&id=${id}`,
+    `https://drive.google.com/thumbnail?id=${id}&sz=w1600`,
+    u
+  ]; }
   return [u];
 }
 function setImageWithFallback(img, url){
   const PLACEHOLDER = 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=1200&auto=format&fit=crop';
-  const cands = imageCandidates(url);
-  let i=0;
+  const cands = imageCandidates(url); let i=0;
   function next(){ if(i<cands.length){ img.src=cands[i++]; } else { img.src=PLACEHOLDER; } }
   img.onerror = ()=>{ img.classList.add('bad'); next(); };
-  img.onload  = ()=>{ img.classList.remove('bad'); };
+  img.onload = ()=>{ img.classList.remove('bad'); };
   next();
 }
 function csvParsePrices(txt){
@@ -187,9 +191,12 @@ function csvParsePrices(txt){
   return map;
 }
 function tsName(){
-  const d=new Date();
-  const pad=n=>String(n).padStart(2,'0');
+  const d=new Date(); const pad=n=>String(n).padStart(2,'0');
   return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+}
+function toast(msg){
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 1800);
 }
 
 // ---------- Estado ----------
@@ -246,15 +253,13 @@ const defaultCat = document.getElementById('defaultCat');
 
 function rebuild(){
   products.forEach(p=>{ if(p.visible === undefined) p.visible = true; if(p.stock === undefined) p.stock = 0; });
-  // categorías presentes + predefinidas
   const set = new Set(['pulseras a mano','aretes','dije','cadena','pulsera','collar','otros']);
   products.forEach(p=> set.add(normalizeCategory(p.category)));
   const arr = Array.from(set).filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
   filterCat.innerHTML = '<option value="*">Todas las categorías</option>' + arr.map(c=>`<option value="${c}">${c[0].toUpperCase()+c.slice(1)}</option>`).join('');
-  // select de nueva categoría por defecto
+  // mantener valor actual del defaultCat si existe
   const current = defaultCat.value || 'pulseras a mano';
   defaultCat.innerHTML = arr.map(c=>`<option value="${c}" ${c===current?'selected':''}>${c[0].toUpperCase()+c.slice(1)}</option>`).join('');
-  // venta rápida select
   quickProduct.innerHTML = products.map((p,i)=>`<option value="${i}">${p.title || 'Producto'}${p.sku ? ' ['+p.sku+']':''}</option>`).join('');
   render();
 }
@@ -301,7 +306,7 @@ function rowNode(p){
   const tdUrl = document.createElement('td');
   const u = document.createElement('input'); u.type='url'; u.value = p.image || ''; u.placeholder='https://...'; u.style.minWidth='360px';
   const fix = document.createElement('button'); fix.className='btn secondary'; fix.textContent='🪄 Drive';
-  fix.addEventListener('click', ()=>{ u.value = imageCandidates(u.value)[0] || u.value; u.dispatchEvent(new Event('input')); });
+  fix.addEventListener('click', ()=>{ const cand=imageCandidates(u.value); u.value = cand[0] || u.value; u.dispatchEvent(new Event('input')); });
   u.addEventListener('input', ()=>{ products[p.index].image = u.value; setImageWithFallback(img, u.value); dirty=true; });
   const open = document.createElement('a'); open.href = p.image || '#'; open.target='_blank'; open.textContent='↗'; open.style.marginLeft='6px';
   u.addEventListener('input', ()=>{ open.href = u.value || '#'; });
@@ -349,9 +354,19 @@ document.getElementById('loadUrl').addEventListener('click', ()=>{
 });
 
 document.getElementById('add').addEventListener('click', ()=>{
+  // Crear el producto con la categoría por defecto seleccionada
   const cat = (defaultCat.value || 'pulseras a mano').toLowerCase();
-  products.push({ sku:'', title:'Nuevo producto', price:0, image:'', category:cat, visible:true, stock:0 });
-  rebuild(); dirty=true;
+  const newProd = { sku:'', title:'Nuevo producto', price:0, image:'', category:cat, visible:true, stock:0 };
+  products.push(newProd);
+  // Limpiar búsqueda y fijar filtro a la categoría del nuevo
+  inputSearch.value = '';
+  filterCat.value = cat;
+  rebuild();
+  // Hacer scroll al final para ver el nuevo
+  const grid = document.querySelector('.grid');
+  grid.scrollTop = grid.scrollHeight;
+  toast('Producto añadido (filtro ajustado a "' + cat + '")');
+  dirty=true;
 });
 
 document.getElementById('export').addEventListener('click', ()=>{
