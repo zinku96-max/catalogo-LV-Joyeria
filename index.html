@@ -24,7 +24,7 @@
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:16px}
   .card{background:var(--card);border-radius:14px;box-shadow:0 8px 20px var(--ring);overflow:hidden;display:flex;flex-direction:column}
   .card h3{margin:12px 12px 0 12px;font-size:16px}
-  .thumb{aspect-ratio:1/1;background:#f6f6f6;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .thumb{aspect-ratio:1/1;background:#f6f6f6;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in}
   .thumb img{width:100%;height:100%;object-fit:cover;display:block}
   .meta{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 12px 12px}
   .price{font-weight:700}
@@ -32,6 +32,15 @@
   .cta.secondary{background:#fff;color:#111}
   footer{margin:28px 0 12px;color:var(--muted);font-size:14px}
   .pill{display:inline-block;background:#111;color:#fff;border-radius:999px;padding:2px 8px;font-size:12px;margin-left:8px}
+
+  /* Lightbox */
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:9999}
+  .lightbox.open{display:flex}
+  .lb-inner{position:relative;max-width:100vw;max-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .lb-img{max-width:92vw;max-height:90vh;object-fit:contain;touch-action:none;transition:transform .15s ease}
+  .lb-img.zoomed{cursor:grab}
+  .lb-close{position:absolute;top:14px;right:14px;border:none;border-radius:999px;background:rgba(255,255,255,.15);color:#fff;width:40px;height:40px;font-size:22px;line-height:40px;text-align:center;cursor:pointer}
+  .lb-title{position:absolute;left:16px;bottom:16px;color:#fff;font-size:14px;background:rgba(0,0,0,.35);padding:6px 10px;border-radius:8px;max-width:80vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -58,24 +67,33 @@
     </footer>
   </div>
 
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox" aria-hidden="true" role="dialog" aria-label="Vista ampliada de la imagen">
+    <div class="lb-inner">
+      <button class="lb-close" aria-label="Cerrar">✕</button>
+      <img id="lbimg" class="lb-img" alt="">
+      <div id="lbtitle" class="lb-title"></div>
+    </div>
+  </div>
+
 <script>
-/* Lady Vanessa Joyería — Catálogo público v4.4
+/* Lady Vanessa Joyería — Catálogo público v4.5 (Lightbox)
    - Carga JSON (sin caché) desde lv_catalog_products.json o catalog.json
-   - Filtro categorías fijo
+   - Filtro categorías
    - Fix imágenes de Google Drive (fallback a thumbnail)
-   - reset: añade ?reset=1 para limpiar almacenamiento local
-   - wa: añade ?wa=34625203302 para que el botón abra WhatsApp
+   - Lightbox: tocar foto → ampliar; doble toque → zoom in/out; arrastrar cuando está ampliada
+   - reset: ?reset=1 borra caché local; wa: ?wa=NUM
 */
 (function(){
   const qs = new URLSearchParams(location.search);
-  const WA_FROM_URL = (qs.get('wa')||'').replace(/\D/g,''); // solo números
+  const WA_FROM_URL = (qs.get('wa')||'').replace(/\D/g,'');
   const RESET = qs.get('reset') === '1';
   document.getElementById('yr').textContent = new Date().getFullYear();
 
   // ---------- Utilidades ----------
   const EUR = new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'});
 
-  // Extrae ID de Google Drive y genera candidatos (view + thumbnail)
+  // Drive helpers
   function driveIdFromUrl(u){
     try{
       if(u.includes("/file/d/")) return u.split("/d/")[1].split("/")[0];
@@ -89,14 +107,14 @@
     if(id){
       return [
         `https://drive.google.com/uc?export=view&id=${id}`,
-        `https://drive.google.com/thumbnail?id=${id}&sz=w1200`,
+        `https://drive.google.com/thumbnail?id=${id}&sz=w1600`,
         u
       ];
     }
     return [u];
   }
   function setImageWithFallback(img, url){
-    const PLACEHOLDER = 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=600&auto=format&fit=crop';
+    const PLACEHOLDER = 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=1200&auto=format&fit=crop';
     const cands = imageCandidates(url);
     let i = 0;
     function tryNext(){
@@ -120,8 +138,7 @@
 
   // ---------- Datos ----------
   const PREFERRED = ['lv_catalog_products.json','catalog.json'];
-  const CACHE_KEY = 'lv_catalog_cache_v2';
-
+  const CACHE_KEY = 'lv_catalog_cache_v3';
   if(RESET){ try{localStorage.removeItem(CACHE_KEY);}catch(e){} }
 
   async function fetchFresh(url){
@@ -129,7 +146,6 @@
     if(!res.ok) throw new Error('HTTP '+res.status);
     return res.json();
   }
-
   async function loadData(){
     for(const p of PREFERRED){
       try{
@@ -159,81 +175,78 @@
     $cat.value = current;
   }
 
+  // Lightbox logic
+  const $lb = document.getElementById('lightbox');
+  const $lbimg = document.getElementById('lbimg');
+  const $lbtitle = document.getElementById('lbtitle');
+  const $lbclose = document.querySelector('.lb-close');
+  let zoomed = false, startX=0, startY=0, imgX=0, imgY=0, lastTap=0;
+
+  function openLightbox(url, title){
+    $lbtitle.textContent = title || '';
+    $lbimg.style.transform = 'translate(0px,0px) scale(1)';
+    imgX = imgY = 0; zoomed = false; $lbimg.classList.remove('zoomed');
+    setImageWithFallback($lbimg, url);
+    $lb.classList.add('open');
+    $lb.setAttribute('aria-hidden','false');
+    document.body.style.overflow='hidden';
+  }
+  function closeLightbox(){
+    $lb.classList.remove('open');
+    $lb.setAttribute('aria-hidden','true');
+    document.body.style.overflow='';
+  }
+
+  function onPointerDown(e){
+    if(!zoomed) return;
+    const pt = e.touches ? e.touches[0] : e;
+    startX = pt.clientX - imgX;
+    startY = pt.clientY - imgY;
+    $lbimg.style.cursor='grabbing';
+  }
+  function onPointerMove(e){
+    if(!zoomed) return;
+    if(!(e.buttons===1 || (e.touches && e.touches.length))) return;
+    const pt = e.touches ? e.touches[0] : e;
+    imgX = pt.clientX - startX;
+    imgY = pt.clientY - startY;
+    $lbimg.style.transform = `translate(${imgX}px, ${imgY}px) scale(2)`;
+  }
+  function onPointerUp(){ $lbimg.style.cursor='grab'; }
+
+  function onTap(e){
+    const now = Date.now();
+    if(now - lastTap < 300){
+      // double tap → toggle zoom
+      zoomed = !zoomed;
+      if(zoomed){
+        $lbimg.classList.add('zoomed');
+        $lbimg.style.transform = 'translate(0px,0px) scale(2)';
+        imgX = imgY = 0;
+      }else{
+        $lbimg.classList.remove('zoomed');
+        $lbimg.style.transform = 'translate(0px,0px) scale(1)';
+      }
+      e.preventDefault();
+    }
+    lastTap = now;
+  }
+
+  // Attach lightbox global handlers
+  $lb.addEventListener('click', (e)=>{ if(e.target===$lb) closeLightbox(); });
+  $lbclose.addEventListener('click', closeLightbox);
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeLightbox(); });
+  // Drag/pan listeners
+  $lbimg.addEventListener('mousedown', onPointerDown);
+  document.addEventListener('mousemove', onPointerMove);
+  document.addEventListener('mouseup', onPointerUp);
+  $lbimg.addEventListener('touchstart', onPointerDown, {passive:true});
+  $lbimg.addEventListener('touchmove', onPointerMove, {passive:false});
+  $lbimg.addEventListener('touchend', onPointerUp, {passive:true});
+  $lbimg.addEventListener('click', onTap);
+
   function productNode(p, waNumber){
     const node = document.createElement('article');
     node.className = 'card';
     node.innerHTML = `
-      <h3 title="${p.title.replace(/"/g,'&quot;')}">${p.title}</h3>
-      <div class="thumb"><img alt="${p.title}"></div>
-      <div class="meta">
-        <div class="price">${EUR.format(p.price||0)}</div>
-        <a class="cta" target="_blank" rel="noopener" aria-label="Contacto por WhatsApp">
-          <svg viewBox="0 0 32 32" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M19.11 17.56c-.31-.16-1.83-.9-2.12-1-.28-.1-.49-.16-.7.16-.21.31-.8 1-.98 1.2-.18.21-.36.23-.67.08-.31-.16-1.31-.48-2.5-1.53-.92-.82-1.54-1.84-1.72-2.15-.18-.31-.02-.48.14-.64.14-.14.31-.36.46-.54.15-.18.2-.31.31-.52.1-.21.05-.39-.03-.54-.08-.16-.7-1.69-.96-2.31-.25-.6-.5-.52-.7-.53h-.6c-.21 0-.54.08-.82.39-.28.31-1.08 1.05-1.08 2.56s1.11 2.97 1.27 3.17c.16.21 2.18 3.34 5.28 4.54.74.32 1.32.51 1.77.65.74.24 1.41.21 1.94.13.59-.09 1.83-.75 2.09-1.48.26-.72.26-1.34.18-1.48-.08-.13-.28-.21-.59-.36z"/><path d="M26.73 5.27C23.88 2.4 20.07 1 16.04 1 7.62 1 0.78 7.84 0.78 16.27c0 2.69.7 5.31 2.04 7.62l-2.16 7.9 8.09-2.12c2.26 1.23 4.81 1.88 7.29 1.88h.01c8.42 0 15.26-6.84 15.26-15.27 0-4.02-1.56-7.8-4.42-10.66zM16.04 28.9h-.01c-2.34 0-4.64-.63-6.63-1.82l-.48-.29-4.8 1.26 1.28-4.69-.31-.48c-1.25-1.98-1.9-4.27-1.9-6.62 0-6.86 5.58-12.44 12.44-12.44 3.33 0 6.46 1.3 8.82 3.65s3.64 5.49 3.64 8.81c0 6.86-5.58 12.44-12.44 12.44z"/></svg>
-          <span>${waNumber ? 'WhatsApp' : 'Copiar info'}</span>
-        </a>
-      </div>
-    `;
-    // Imagen con fallback (Drive)
-    const img = node.querySelector('img');
-    setImageWithFallback(img, p.image);
-
-    // CTA
-    const btn = node.querySelector('.cta');
-    if(waNumber){
-      const message = encodeURIComponent(`Hola, me interesa:\n${p.title}\nPrecio: ${EUR.format(p.price||0)}\n¿Disponible?`);
-      btn.href = `https://wa.me/${waNumber}?text=${message}`;
-    }else{
-      btn.classList.add('secondary');
-      btn.href = '#';
-      btn.addEventListener('click', (e)=>{
-        e.preventDefault();
-        const txt = `${p.title} — ${EUR.format(p.price||0)}`;
-        navigator.clipboard?.writeText(txt);
-        btn.innerHTML = 'Copiado ✓';
-        setTimeout(()=>{ btn.innerHTML = 'Copiar info'; }, 1200);
-      });
-    }
-    return node;
-  }
-
-  function applyFilters(items){
-    const term = $q.value.trim().toLowerCase();
-    const catv = $cat.value;
-    return items.filter(p=>{
-      const okName = !term || (p.title||'').toLowerCase().includes(term);
-      const okCat = (catv==='*') || normalizeCategory(p.category)===catv;
-      return okName && okCat;
-    });
-  }
-
-  function render(items, waNumber){
-    buildCategories(items);
-    const filtered = applyFilters(items);
-    $grid.innerHTML = '';
-    filtered.forEach(p => $grid.appendChild(productNode(p, waNumber)));
-    $count.textContent = `Resultados: ${filtered.length}`;
-  }
-
-  // ---------- Carga ----------
-  loadData()
-    .then(data=>{
-      const items = (data.products||[]).map(p=>({
-        title: p.title || p.name || 'Producto',
-        price: Number(p.price||0),
-        image: p.image || '',
-        category: normalizeCategory(p.category || p.categoryName || 'otros')
-      }));
-      const waNumber = (qs.get('wa')||'').replace(/\D/g,'');
-      render(items, waNumber);
-
-      $q.addEventListener('input', ()=> render(items, waNumber));
-      $cat.addEventListener('change', ()=> render(items, waNumber));
-    })
-    .catch(err=>{
-      $grid.innerHTML = `<div style="padding:14px">No se pudo cargar el catálogo. Sube <code>lv_catalog_products.json</code> o <code>catalog.json</code> a la raíz del repositorio.</div>`;
-      console.error(err);
-    });
-})();
-</script>
-</body>
-</html>
+      <h3 title="${p.title.repla
