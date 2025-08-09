@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor de Catálogo — Lady Vanessa Joyería ✨</title>
+<meta name="description" content="Editor visual para lv_catalog_products.json">
+<style>
+  :root{ --bg:#fffbea; --card:#fff; --ink:#1b1b1b; --muted:#6b6b6b; --ring:rgba(0,0,0,.07); --accent:#111; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  header{max-width:1100px;margin:20px auto 12px;padding:0 16px;display:flex;gap:12px;align-items:baseline;justify-content:space-between;flex-wrap:wrap}
+  h1{font-size:22px;margin:0}
+  .wrap{max-width:1100px;margin:auto;padding:0 16px 24px}
+  .panel{background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:0 6px 18px var(--ring);display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+  .panel input[type="text"], .panel input[type="url"], .panel input[type="number"], .panel select, .panel textarea{
+    border:1px solid #e7e7e7;border-radius:10px;padding:10px 12px;background:#fff;outline:none
+  }
+  .btn{appearance:none;border:1px solid #e5e5e5;border-radius:10px;padding:9px 12px;background:#111;color:#fff;cursor:pointer}
+  .btn.secondary{background:#fff;color:#111}
+  .btn.warn{background:#b00020;color:#fff;border-color:#b00020}
+  .grid{overflow:auto;border-radius:14px;border:1px solid #eee;background:#fff}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th, td{padding:10px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+  th{position:sticky;top:0;background:#fafafa;z-index:2}
+  tbody tr:hover{background:#fffdf0}
+  .imgprev{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #eee;background:#f7f7f7}
+  .row-actions{display:flex;gap:6px}
+  .pill{display:inline-block;background:#111;color:#fff;border-radius:999px;padding:2px 8px;font-size:12px}
+  .muted{color:var(--muted)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .error{background:#fff3f3;border:1px solid #ffd2d2;color:#8a0000;border-radius:12px;padding:12px;margin:12px 0;display:none}
+  .ok{background:#f1fff3;border:1px solid #c7ffd2;color:#008a2a;border-radius:12px;padding:12px;margin:12px 0;display:none}
+  @media (max-width:840px){ .two{grid-template-columns:1fr} th:nth-child(5), td:nth-child(5){min-width:220px} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Editor de Catálogo — Lady Vanessa Joyería ✨</h1>
+  <div><span class="pill">Admin local</span> <span class="muted">Edita y descarga el JSON</span></div>
+</header>
+
+<div class="wrap">
+
+  <div class="panel">
+    <button class="btn" id="loadSame">Cargar del repo</button>
+    <label class="btn secondary" for="file">Importar archivo…</label>
+    <input id="file" type="file" accept="application/json" style="display:none">
+    <input id="jsonUrl" type="url" placeholder="o URL completa del JSON (opcional)" style="min-width:280px">
+    <button class="btn secondary" id="loadUrl">Cargar URL</button>
+    <div class="muted" id="status">Sin datos</div>
+  </div>
+
+  <div class="panel">
+    <input id="search" type="text" placeholder="Buscar…">
+    <select id="filterCat"><option value="*">Todas las categorías</option></select>
+    <label class="muted"><input id="showHidden" type="checkbox"> Mostrar ocultos</label>
+    <button class="btn" id="add">Añadir producto</button>
+    <button class="btn secondary" id="export">Descargar JSON</button>
+  </div>
+
+  <div class="grid">
+    <table id="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Visible</th>
+          <th>Foto</th>
+          <th>Título</th>
+          <th>Imagen (URL)</th>
+          <th>Precio (€)</th>
+          <th>Categoría</th>
+          <th>Stock</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="two" style="margin-top:12px">
+    <div class="panel" style="align-items:stretch">
+      <div style="flex:1">
+        <h3 style="margin:0 0 8px 0">Actualizar precios en bloque</h3>
+        <p class="muted" style="margin:0 0 8px 0">Pega <b>Título<TAB>Precio</b>, una línea por producto.</p>
+        <textarea id="bulk" rows="8" placeholder="Ejemplo:
+23275 - D MANO DE FATIMA\t15
+34198 - CANDONGA GUCCI\t21" style="width:100%"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" id="applyBulk">Aplicar precios</button>
+          <button class="btn secondary" id="convertDrive">Arreglar enlaces de Google Drive</button>
+        </div>
+        <div id="bulkResult" class="ok"></div>
+      </div>
+    </div>
+    <div>
+      <div id="errorBox" class="error"></div>
+      <div id="okBox" class="ok"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---------- Utilidades ----------
+const EUR = new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'});
+function normalizeCategory(c){
+  c = (c||'').toString().trim().toLowerCase();
+  if(!c) return 'otros';
+  if(c.startsWith('arete')) return 'aretes';
+  if(c.startsWith('cadena')) return 'cadena';
+  if(c.startsWith('collar')) return 'collar';
+  if(c.startsWith('dije') || c.includes('charm') || c.includes('colgante')) return 'dije';
+  if(c.startsWith('pulsera')) return 'pulsera';
+  return c;
+}
+function driveIdFromUrl(u){
+  try{
+    if(u.includes('/file/d/')) return u.split('/d/')[1].split('/')[0];
+    const url = new URL(u); const id = url.searchParams.get('id'); if(id) return id;
+  }catch(e){}
+  return null;
+}
+function toDriveView(u){
+  const id = driveIdFromUrl(u);
+  return id ? `https://drive.google.com/uc?export=view&id=${id}` : u;
+}
+function csvParsePrices(txt){
+  const map = new Map();
+  txt.split(/\r?\n/).forEach(ln => {
+    const s = ln.trim(); if(!s) return;
+    const parts = s.split(/\t+/);
+    if(parts.length >= 2){
+      const title = parts[0].trim();
+      const price = parseFloat(String(parts[1]).replace(',','.'));
+      if(!isNaN(price)) map.set(title.toUpperCase(), price);
+    } else {
+      const m = s.match(/^(.*\S)\s+(\d+(?:[.,]\d+)?)$/);
+      if(m){
+        const title = m[1].trim();
+        const price = parseFloat(m[2].replace(',','.'));
+        if(!isNaN(price)) map.set(title.toUpperCase(), price);
+      }
+    }
+  });
+  return map;
+}
+
+// ---------- Estado ----------
+let products = [];
+let dirty = false;
+
+// ---------- Carga ----------
+const statusEl = document.getElementById('status');
+async function fetchFresh(url){
+  const res = await fetch(url + (url.includes('?')?'&':'?') + 't=' + Date.now(), {cache:'no-store'});
+  if(!res.ok) throw new Error('HTTP '+res.status+' al pedir '+url);
+  return res.json();
+}
+
+async function loadFromRepo(){
+  errorBox(''); okBox('');
+  const candidates = ['lv_catalog_products.json','catalog.json'];
+  let lastErr = '';
+  for(const c of candidates){
+    try{
+      const data = await fetchFresh(c);
+      if(data && Array.isArray(data.products)){ products = data.products; rebuild(); okBox('Cargado: '+c); return; }
+    }catch(e){ lastErr = e.message || String(e); }
+  }
+  errorBox('No se pudo cargar del repo. Intenté: '+candidates.join(' → ') + (lastErr? ' · '+lastErr:''));
+}
+async function loadFromUrl(url){
+  errorBox(''); okBox('');
+  try{
+    const data = await fetchFresh(url);
+    if(data && Array.isArray(data.products)){ products = data.products; rebuild(); okBox('Cargado desde URL.'); }
+    else throw new Error('Estructura inválida (debe contener "products")');
+  }catch(e){ errorBox('Error al cargar URL: '+(e.message||e)); }
+}
+function loadFromFile(file){
+  errorBox(''); okBox('');
+  const fr = new FileReader();
+  fr.onload = () => {
+    try{
+      const data = JSON.parse(fr.result);
+      if(data && Array.isArray(data.products)){ products = data.products; rebuild(); okBox('Archivo importado.'); }
+      else throw new Error('Estructura inválida (debe contener "products")');
+    }catch(e){ errorBox('Error al leer archivo: '+(e.message||e)); }
+  };
+  fr.readAsText(file, 'utf-8');
+}
+
+// ---------- Render ----------
+const tbody = document.querySelector('#table tbody');
+const filterCat = document.getElementById('filterCat');
+const inputSearch = document.getElementById('search');
+const showHidden = document.getElementById('showHidden');
+
+function rebuild(){
+  // visibilidad por defecto = true
+  products.forEach(p=>{ if(p.visible === undefined) p.visible = true; });
+  // categorías
+  const set = new Set(products.map(p=> normalizeCategory(p.category)));
+  const arr = Array.from(set).filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+  filterCat.innerHTML = '<option value="*">Todas las categorías</option>' + arr.map(c=>`<option value="${c}">${c[0].toUpperCase()+c.slice(1)}</option>`).join('');
+  render();
+}
+
+function render(){
+  const term = (inputSearch.value||'').trim().toLowerCase();
+  const catv = filterCat.value;
+  const rows = products
+    .map((p, i) => ({...p, index:i}))
+    .filter(p => (showHidden.checked || p.visible !== false))
+    .filter(p => !term || (p.title||'').toLowerCase().includes(term))
+    .filter(p => (catv === '*' || normalizeCategory(p.category) === catv));
+
+  tbody.innerHTML = '';
+  rows.forEach(row => tbody.appendChild(rowNode(row)));
+  statusEl.textContent = `Mostrando ${rows.length} de ${products.length}`;
+}
+
+function rowNode(p){
+  const tr = document.createElement('tr');
+
+  const tdIdx = document.createElement('td');
+  tdIdx.textContent = String(p.index+1);
+  tr.appendChild(tdIdx);
+
+  // visible
+  const tdVis = document.createElement('td');
+  const vis = document.createElement('input'); vis.type='checkbox'; vis.checked = (p.visible !== false);
+  vis.addEventListener('change', ()=>{ products[p.index].visible = vis.checked; dirty=true; });
+  tdVis.appendChild(vis);
+  tr.appendChild(tdVis);
+
+  // preview
+  const tdPrev = document.createElement('td');
+  const img = document.createElement('img'); img.className='imgprev'; img.alt=p.title||''; img.src = toDriveView(p.image || '');
+  tdPrev.appendChild(img);
+  tr.appendChild(tdPrev);
+
+  // título
+  const tdTitle = document.createElement('td');
+  const t = document.createElement('input'); t.type='text'; t.value = p.title || p.name || '';
+  t.style.minWidth='220px';
+  t.addEventListener('input', ()=>{ products[p.index].title = t.value; dirty=true; });
+  tdTitle.appendChild(t);
+  tr.appendChild(tdTitle);
+
+  // imagen url
+  const tdUrl = document.createElement('td');
+  const u = document.createElement('input'); u.type='url'; u.value = p.image || ''; u.placeholder='https://...';
+  u.style.minWidth='260px';
+  const fix = document.createElement('button'); fix.className='btn secondary'; fix.textContent='🪄 Drive';
+  fix.addEventListener('click', ()=>{ u.value = toDriveView(u.value); u.dispatchEvent(new Event('input')); });
+  u.addEventListener('input', ()=>{ products[p.index].image = u.value; img.src = toDriveView(u.value); dirty=true; });
+  const open = document.createElement('a'); open.href = p.image || '#'; open.target='_blank'; open.textContent='↗'; open.style.marginLeft='6px';
+  u.addEventListener('input', ()=>{ open.href = u.value || '#'; });
+  tdUrl.appendChild(u); tdUrl.appendChild(fix); tdUrl.appendChild(open);
+  tr.appendChild(tdUrl);
+
+  // precio
+  const tdPrice = document.createElement('td');
+  const pr = document.createElement('input'); pr.type='number'; pr.step='0.01'; pr.min='0'; pr.value = (p.price!=null? p.price : '');
+  pr.style.width='120px';
+  pr.addEventListener('input', ()=>{ products[p.index].price = parseFloat(pr.value)||0; dirty=true; });
+  tdPrice.appendChild(pr);
+  tr.appendChild(tdPrice);
+
+  // categoría
+  const tdCat = document.createElement('td');
+  const c = document.createElement('input'); c.type='text'; c.value = p.category || ''; c.placeholder='aretes, cadena, dije, pulsera, collar';
+  c.style.width='160px';
+  c.addEventListener('input', ()=>{ products[p.index].category = c.value; dirty=true; });
+  tdCat.appendChild(c);
+  tr.appendChild(tdCat);
+
+  // stock
+  const tdStock = document.createElement('td');
+  const st = document.createElement('input'); st.type='number'; st.step='1'; st.min='0'; st.value = (p.stock!=null? p.stock : '');
+  st.style.width='90px';
+  st.addEventListener('input', ()=>{ const v = parseInt(st.value,10); products[p.index].stock = isNaN(v)? 0: v; dirty=true; });
+  tdStock.appendChild(st);
+  tr.appendChild(tdStock);
+
+  // acciones
+  const tdAc = document.createElement('td'); tdAc.className='row-actions';
+  const dup = document.createElement('button'); dup.className='btn secondary'; dup.textContent='Duplicar';
+  dup.addEventListener('click', ()=>{ const copy = JSON.parse(JSON.stringify(products[p.index])); copy.title = copy.title + ' (copia)'; products.splice(p.index+1,0,copy); rebuild(); dirty=true; });
+  const del = document.createElement('button'); del.className='btn warn'; del.textContent='Borrar';
+  del.addEventListener('click', ()=>{ if(confirm('¿Borrar este producto?')){ products.splice(p.index,1); rebuild(); dirty=true; } });
+  const up = document.createElement('button'); up.className='btn secondary'; up.textContent='↑'; up.title='Subir';
+  up.addEventListener('click', ()=>{ if(p.index>0){ const tmp=products[p.index-1]; products[p.index-1]=products[p.index]; products[p.index]=tmp; rebuild(); dirty=true; } });
+  const dn = document.createElement('button'); dn.className='btn secondary'; dn.textContent='↓'; dn.title='Bajar';
+  dn.addEventListener('click', ()=>{ if(p.index<products.length-1){ const tmp=products[p.index+1]; products[p.index+1]=products[p.index]; products[p.index]=tmp; rebuild(); dirty=true; } });
+  tdAc.appendChild(dup); tdAc.appendChild(up); tdAc.appendChild(dn); tdAc.appendChild(del);
+  tr.appendChild(tdAc);
+
+  return tr;
+}
+
+// ---------- Acciones ----------
+function errorBox(msg){ const el=document.getElementById('errorBox'); el.textContent=msg||''; el.style.display = msg? 'block':'none'; }
+function okBox(msg){ const el=document.getElementById('okBox'); el.textContent=msg||''; el.style.display = msg? 'block':'none'; }
+
+document.getElementById('loadSame').addEventListener('click', loadFromRepo);
+document.getElementById('file').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) loadFromFile(f); });
+document.getElementById('loadUrl').addEventListener('click', ()=>{
+  const u = document.getElementById('jsonUrl').value.trim(); if(u) loadFromUrl(u);
+});
+
+document.getElementById('add').addEventListener('click', ()=>{
+  products.push({ title:'Nuevo producto', price:0, image:'', category:'otros', visible:true, stock:0 });
+  rebuild(); dirty=true;
+});
+
+document.getElementById('export').addEventListener('click', ()=>{
+  const out = { products };
+  const blob = new Blob([JSON.stringify(out, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'lv_catalog_products.json';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+  okBox('Descargado lv_catalog_products.json');
+  dirty=false;
+});
+
+inputSearch.addEventListener('input', render);
+filterCat.addEventListener('change', render);
+showHidden.addEventListener('change', render);
+
+document.getElementById('applyBulk').addEventListener('click', ()=>{
+  const map = csvParsePrices(document.getElementById('bulk').value);
+  let updated=0, missing=[];
+  const idx = new Map(products.map((p,i)=>[(p.title||'').toUpperCase(), i]));
+  map.forEach((price, title)=>{
+    const i = idx.get(title);
+    if(i!=null){ products[i].price = price; updated++; } else { missing.push(title); }
+  });
+  rebuild();
+  const box = document.getElementById('bulkResult');
+  box.style.display='block';
+  box.innerHTML = `Actualizados: <b>${updated}</b>` + (missing.length? `<br><span class="muted">No encontrados:</span> ${missing.slice(0,10).join(' · ')}${missing.length>10?'…':''}`:'');
+  dirty = true;
+});
+
+document.getElementById('convertDrive').addEventListener('click', ()=>{
+  let changes=0;
+  products.forEach(p=>{
+    const conv = toDriveView(p.image||'');
+    if(conv && conv !== p.image){ p.image = conv; changes++; }
+  });
+  rebuild();
+  okBox(`Convertidos ${changes} enlaces de Drive a vista directa.`);
+  dirty = dirty || (changes>0);
+});
+
+// Intento de carga al abrir (del repo)
+loadFromRepo().catch(()=>{});
+</script>
+</body>
+</html>
