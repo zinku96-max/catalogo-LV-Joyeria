@@ -1,178 +1,235 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lady Vanessa Joyería — Catálogo ✨</title>
-  <meta name="description" content="Catálogo de oro laminado 18K — Lady Vanessa Joyería" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    .line-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lady Vanessa Joyería ✨ — Catálogo</title>
+<meta name="description" content="Catálogo de Lady Vanessa Joyería ✨ · Oro laminado 18K · Donostia">
+<style>
+  :root{
+    --bg:#fffbea; --card:#ffffff; --ink:#1b1b1b; --muted:#6b6b6b; --brand:#111;
+    --ring:rgba(0,0,0,.07);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+  .wrap{max-width:1100px;margin:auto;padding:24px}
+  header{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px}
+  .brand{font-weight:800; letter-spacing:.3px; font-size:clamp(26px,3.5vw,34px); line-height:1.05}
+  .sub{color:var(--muted); margin-top:4px}
+  .panel{background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:0 6px 18px var(--ring);display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .panel input[type="search"], .panel select, .panel input[type="tel"]{
+    border:1px solid #e7e7e7;border-radius:10px;padding:10px 12px;min-width:220px;outline:none;background:white
+  }
+  .count{color:var(--muted); font-size:14px;padding-left:4px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:16px}
+  .card{background:var(--card);border-radius:14px;box-shadow:0 8px 20px var(--ring);overflow:hidden;display:flex;flex-direction:column}
+  .card h3{margin:12px 12px 0 12px;font-size:16px}
+  .thumb{aspect-ratio:1/1;background:#f6f6f6;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .meta{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 12px 12px}
+  .price{font-weight:700}
+  .cta{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:9px 12px;border:1px solid #e5e5e5;background:#111;color:#fff;text-decoration:none}
+  .cta.secondary{background:#fff;color:#111}
+  footer{margin:28px 0 12px;color:var(--muted);font-size:14px}
+  .pill{display:inline-block;background:#111;color:#fff;border-radius:999px;padding:2px 8px;font-size:12px;margin-left:8px}
+</style>
 </head>
-<body class="bg-amber-50 text-gray-900">
-  <header class="max-w-6xl mx-auto p-4 md:p-8">
-    <h1 class="text-2xl md:text-3xl font-bold">Lady Vanessa Joyería ✨</h1>
-    <p class="text-sm text-gray-600">Catálogo · Oro laminado 18K · Donostia</p>
-  </header>
-
-  <main class="max-w-6xl mx-auto p-4 md:p-8">
-    <!-- Filtros -->
-    <section class="bg-white/80 rounded-2xl shadow p-4 mb-6">
-      <div class="grid md:grid-cols-4 gap-3">
-        <input id="searchInput" placeholder="Buscar por nombre..." class="px-3 py-2 rounded-xl border border-gray-300" />
-        <select id="categoryFilter" class="px-3 py-2 rounded-xl border border-gray-300">
-          <option value="">Todas las categorías</option>
-        </select>
-        <input id="whatsInput" placeholder="WhatsApp (ej. 34625203302)" class="px-3 py-2 rounded-xl border border-gray-300" />
-        <div class="text-sm text-gray-600 flex items-center">Resultados: <b id="count" class="ml-1">0</b></div>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="brand">Lady Vanessa Joyería ✨</div>
+        <div class="sub">Catálogo · Oro laminado 18K · Donostia <span class="pill" id="catBadge">Público</span></div>
       </div>
+    </header>
+
+    <section class="panel" role="search">
+      <input id="q" type="search" placeholder="Buscar por nombre…">
+      <select id="cat">
+        <option value="*">Todas las categorías</option>
+      </select>
+      <!-- Campo WhatsApp oculto: se usa solo si pones ?wa=NUMERO en el enlace -->
+      <input id="wa" type="tel" inputmode="numeric" placeholder="WhatsApp (opcional)" style="display:none">
+      <div class="count" id="count">Resultados: 0</div>
     </section>
 
-    <!-- Grid -->
-    <section id="grid" class="grid sm:grid-cols-2 md:grid-cols-3 gap-4"></section>
+    <section class="grid" id="grid" aria-live="polite"></section>
 
-    <p id="empty" class="hidden text-center text-gray-500 mt-8">No hay productos para mostrar.</p>
-  </main>
+    <footer>
+      © <span id="yr"></span> Lady Vanessa Joyería ✨ — Solo catálogo (sin pagos). Contacto por WhatsApp.
+    </footer>
+  </div>
 
-  <footer class="max-w-6xl mx-auto p-8 text-center text-xs text-gray-500">
-    © <span id="year"></span> Lady Vanessa Joyería — Catálogo público (sin edición).
-  </footer>
+<script>
+(function(){
+  const qs = new URLSearchParams(location.search);
+  const WA_FROM_URL = (qs.get('wa')||'').replace(/\D/g,''); // solo números
+  const RESET = qs.get('reset') === '1';
+  document.getElementById('yr').textContent = new Date().getFullYear();
 
-  <!-- Card template (sin botones de edición) -->
-  <template id="cardTpl">
-    <div class="bg-white rounded-2xl shadow hover:shadow-md transition overflow-hidden flex flex-col">
-      <div class="p-3">
-        <h3 class="font-semibold text-base line-clamp-2"></h3>
-      </div>
-      <div class="aspect-square bg-gray-100 overflow-hidden">
-        <img class="w-full h-full object-cover" alt="Producto" />
-      </div>
-      <div class="p-3 flex items-center justify-between">
-        <div class="text-amber-700 font-semibold"></div>
-        <a target="_blank" class="whatsBtn px-3 py-2 rounded-xl bg-emerald-600 text-white text-sm">WhatsApp</a>
-      </div>
-    </div>
-  </template>
+  // ---------- Utilidades ----------
+  const EUR = new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'});
 
-  <script>
-    // Utilidades básicas
-    const $ = s => document.querySelector(s);
-    const eur = v => new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(v||0);
+  // Convierte enlaces de Google Drive a enlace directo visible
+  function resolveImage(u){
+    if(!u) return "";
+    try{
+      if(u.includes("drive.google.com/file/d/")){
+        const id = u.split("/d/")[1]?.split("/")[0];
+        if(id) return `https://drive.google.com/uc?export=view&id=${id}`;
+      }
+      if(u.includes("drive.google.com")){
+        const url = new URL(u);
+        const id = url.searchParams.get("id");
+        if(id) return `https://drive.google.com/uc?export=view&id=${id}`;
+      }
+    }catch(e){}
+    return u;
+  }
 
-    const STORAGE_KEY = 'lv_catalog_products_v1';
-    const PHONE_KEY = 'lv_catalog_phone';
+  function normalizeCategory(c){
+    c = (c||'').toString().trim().toLowerCase();
+    if(!c) return 'otros';
+    if(c.startsWith('arete')) return 'aretes';
+    if(c.startsWith('aretes')) return 'aretes';
+    if(c.startsWith('cadena')) return 'cadena';
+    if(c.startsWith('collar')) return 'collar';
+    if(c.startsWith('dije') || c.includes('charm') || c.includes('colgante')) return 'dije';
+    if(c.startsWith('pulsera')) return 'pulsera';
+    return c;
+  }
 
-    const state = { products: [], phone: localStorage.getItem(PHONE_KEY)||'' };
+  // ---------- Datos ----------
+  const PREFERRED = ['lv_catalog_products.json','catalog.json'];
+  const CACHE_KEY = 'lv_catalog_cache_v1';
 
-    const searchInput = $('#searchInput');
-    const categoryFilter = $('#categoryFilter');
-    const whatsInput = $('#whatsInput');
-    const grid = $('#grid');
+  if(RESET){ try{localStorage.removeItem(CACHE_KEY);}catch(e){} }
 
-    // Normalización de categorías (arete/aretes, dije/dijes...)
-    function normCat(c){
-      if(!c) return '';
-      const x = c.toString().trim().toLowerCase();
-      if (x.startsWith('arete')) return 'aretes';
-      if (x.startsWith('dije')) return 'dije';
-      if (x.startsWith('collar')) return 'collar';
-      if (x.startsWith('cadena')) return 'cadena';
-      if (x.startsWith('pulsera')) return 'pulsera';
-      return x;
+  async function fetchFresh(url){
+    // cache-busting
+    const res = await fetch(url + (url.includes('?')?'&':'?') + 't=' + Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    return res.json();
+  }
+
+  async function loadData(){
+    // intentar del servidor (sin cache). Si todo falla, usar localStorage.
+    for(const p of PREFERRED){
+      try{
+        const data = await fetchFresh(p);
+        try{ localStorage.setItem(CACHE_KEY, JSON.stringify(data)); }catch(e){}
+        return data;
+      }catch(e){ /* sigue con el siguiente */ }
     }
+    const raw = localStorage.getItem(CACHE_KEY);
+    if(raw) return JSON.parse(raw);
+    throw new Error('No se pudo cargar el catálogo.');
+  }
 
-    function load(){
-      document.getElementById('year').textContent = new Date().getFullYear();
+  // ---------- UI ----------
+  const $grid = document.getElementById('grid');
+  const $q = document.getElementById('q');
+  const $cat = document.getElementById('cat');
+  const $wa = document.getElementById('wa');
+  const $count = document.getElementById('count');
 
-      // Parámetros de URL: ?wa= (WhatsApp) y ?reset=1 para forzar refresco del catálogo
-      const q = new URLSearchParams(location.search);
-      const wa = (q.get('wa')||'').trim();
-      if(wa){ state.phone = wa; localStorage.setItem(PHONE_KEY, wa); }
-      const doReset = q.get('reset') === '1';
-      if (doReset) localStorage.removeItem(STORAGE_KEY);
-      whatsInput.value = state.phone||'';
+  if(WA_FROM_URL){
+    $wa.value = WA_FROM_URL;
+  }
 
-      // 1) Siempre intentamos cargar del catalog.json más reciente (evita caché con ?t=)
-      const cacheBust = `?t=${Date.now()}`;
-      fetch('catalog.json'+cacheBust)
-        .then(r => r.ok ? r.json() : Promise.reject())
-        .catch(()=> fetch('lv_catalog_products.json'+cacheBust).then(r=> r.ok? r.json(): Promise.reject()))
-        .then(json=>{
-          if(json && Array.isArray(json.products)){
-            state.products = json.products.map(p=>({
-              id: crypto.randomUUID(),
-              title: p.title || p.name || '',
-              price: Number(p.price || 0),
-              image: p.image || '',
-              category: p.category || ''
-            }));
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state.products));
-            render();
-            return; // listo
-          }
-          throw new Error('Formato JSON desconocido');
-        })
-        .catch(()=>{
-          // 2) Fallback: si no hay JSON online, usar lo que haya en localStorage
-          try{ state.products = JSON.parse(localStorage.getItem(STORAGE_KEY))||[]; }catch{ state.products = []; }
-          render();
-        });
-    }
+  function buildCategories(items){
+    const set = new Set();
+    items.forEach(p=> set.add(normalizeCategory(p.category)));
+    const arr = Array.from(set).filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+    // Poblar select conservando la selección
+    const current = $cat.value || '*';
+    $cat.innerHTML = '<option value="*">Todas las categorías</option>' +
+      arr.map(c=>`<option value="${c}">${c[0].toUpperCase()+c.slice(1)}</option>`).join('');
+    $cat.value = current;
+  }
 
-    function buildCategories(selected){(selected){
-      // Construye las opciones sin perder la selección actual
-      const set = new Map();
-      state.products.forEach(p=>{
-        const n = normCat(p.category);
-        if(!n) return; if(!set.has(n)) set.set(n, n.charAt(0).toUpperCase()+n.slice(1));
-      });
-      categoryFilter.innerHTML = '<option value="">Todas las categorías</option>' +
-        Array.from(set.entries()).sort((a,b)=> a[1].localeCompare(b[1]))
-          .map(([val,lab])=>`<option value="${val}">${lab}</option>`).join('');
-      // restaurar selección si existe
-      const has = [...categoryFilter.options].some(o=>o.value===selected);
-      categoryFilter.value = has ? selected : '';
-    }
+  function productNode(p){
+    const node = document.createElement('article');
+    node.className = 'card';
+    node.innerHTML = `
+      <h3 title="${p.title.replace(/"/g,'&quot;')}">${p.title}</h3>
+      <div class="thumb"><img alt="${p.title}"></div>
+      <div class="meta">
+        <div class="price">${EUR.format(p.price||0)}</div>
+        <a class="cta" target="_blank" rel="noopener" aria-label="Contacto por WhatsApp">
+          <svg viewBox="0 0 32 32" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M19.11 17.56c-.31-.16-1.83-.9-2.12-1-.28-.1-.49-.16-.7.16-.21.31-.8 1-.98 1.2-.18.21-.36.23-.67.08-.31-.16-1.31-.48-2.5-1.53-.92-.82-1.54-1.84-1.72-2.15-.18-.31-.02-.48.14-.64.14-.14.31-.36.46-.54.15-.18.2-.31.31-.52.1-.21.05-.39-.03-.54-.08-.16-.7-1.69-.96-2.31-.25-.6-.5-.52-.7-.53h-.6c-.21 0-.54.08-.82.39-.28.31-1.08 1.05-1.08 2.56s1.11 2.97 1.27 3.17c.16.21 2.18 3.34 5.28 4.54.74.32 1.32.51 1.77.65.74.24 1.41.21 1.94.13.59-.09 1.83-.75 2.09-1.48.26-.72.26-1.34.18-1.48-.08-.13-.28-.21-.59-.36z"/><path d="M26.73 5.27C23.88 2.4 20.07 1 16.04 1 7.62 1 0.78 7.84 0.78 16.27c0 2.69.7 5.31 2.04 7.62l-2.16 7.9 8.09-2.12c2.26 1.23 4.81 1.88 7.29 1.88h.01c8.42 0 15.26-6.84 15.26-15.27 0-4.02-1.56-7.8-4.42-10.66zM16.04 28.9h-.01c-2.34 0-4.64-.63-6.63-1.82l-.48-.29-4.8 1.26 1.28-4.69-.31-.48c-1.25-1.98-1.9-4.27-1.9-6.62 0-6.86 5.58-12.44 12.44-12.44 3.33 0 6.46 1.3 8.82 3.65s3.64 5.49 3.64 8.81c0 6.86-5.58 12.44-12.44 12.44z"/></svg>
+          <span>WhatsApp</span>
+        </a>
+      </div>
+    `;
+    // Imagen
+    const img = node.querySelector('img');
+    img.src = resolveImage(p.image) || 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=600&auto=format&fit=crop';
 
-    function render(){
-      const selectedBefore = categoryFilter.value; // guardar selección
-      buildCategories(selectedBefore);            // reconstruir opciones pero conservar selección
-
-      const term = (searchInput.value||'').toLowerCase();
-      const cat = normCat(categoryFilter.value||'');
-
-      const filtered = state.products.filter(p=>{
-        const okName = !term || (p.title||'').toLowerCase().includes(term);
-        const okCat = !cat || normCat(p.category)===cat;
-        return okName && okCat;
-      });
-
-      $('#count').textContent = filtered.length;
-      grid.innerHTML = '';
-      $('#empty').classList.toggle('hidden', filtered.length>0);
-
-      const tpl = document.getElementById('cardTpl').content.firstElementChild;
-      filtered.forEach(p=>{
-        const node = tpl.cloneNode(true);
-        node.querySelector('h3').textContent = p.title||'';
-        const img = node.querySelector('img');
-        img.src = p.image || 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=600&auto=format&fit=crop';
-        img.alt = p.title||'Producto';
-        node.querySelector('div.text-amber-700').textContent = eur(p.price);
-        const phone = (whatsInput.value||'').replace(/\D/g,'');
-        const text = encodeURIComponent(`Hola, me interesa: ${p.title} (${eur(p.price)}). ¿Está disponible?`);
-        node.querySelector('.whatsBtn').href = phone? `https://wa.me/${phone}?text=${text}` : `https://wa.me/?text=${text}`;
-        grid.appendChild(node);
+    // CTA
+    const btn = node.querySelector('.cta');
+    const waNumber = ($wa.value || WA_FROM_URL || '').replace(/\D/g,'');
+    if(waNumber){
+      const message = encodeURIComponent(`Hola, me interesa:\n${p.title}\nPrecio: ${EUR.format(p.price||0)}\n¿Disponible?`);
+      btn.href = `https://wa.me/${waNumber}?text=${message}`;
+    }else{
+      // sin número: cambia a botón "Copiar info"
+      btn.classList.add('secondary');
+      btn.href = '#';
+      btn.querySelector('span').textContent = 'Copiar info';
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        const txt = `${p.title} — ${EUR.format(p.price||0)}`;
+        navigator.clipboard?.writeText(txt);
+        btn.textContent = 'Copiado ✓';
+        setTimeout(()=>{ btn.innerHTML = 'Copiar info'; }, 1200);
       });
     }
+    return node;
+  }
 
-    // Eventos
-    searchInput.addEventListener('input', render);
-    categoryFilter.addEventListener('change', render);
-    whatsInput.addEventListener('change', ()=>{ localStorage.setItem(PHONE_KEY, whatsInput.value.trim()); render(); });
+  function applyFilters(items){
+    const term = $q.value.trim().toLowerCase();
+    const cat = $cat.value;
+    return items.filter(p=>{
+      const okName = !term || (p.title||'').toLowerCase().includes(term);
+      const okCat = (cat==='*') || normalizeCategory(p.category)===cat;
+      return okName && okCat;
+    });
+  }
 
-    load();
-  </script>
+  function render(items){
+    // categorías
+    buildCategories(items);
+    // productos
+    const filtered = applyFilters(items);
+    $grid.innerHTML = '';
+    filtered.forEach(p => $grid.appendChild(productNode(p)));
+    $count.textContent = `Resultados: ${filtered.length}`;
+  }
+
+  // ---------- Carga ----------
+  loadData()
+    .then(data=>{
+      const items = (data.products||[]).map(p=>({
+        title: p.title || p.name || 'Producto',
+        price: Number(p.price||0),
+        image: p.image || '',
+        category: normalizeCategory(p.category || p.categoryName || 'otros')
+      }));
+      render(items);
+
+      // eventos
+      $q.addEventListener('input', ()=> render(items));
+      $cat.addEventListener('change', ()=> render(items));
+      // si el número llega por query, no mostramos el input
+      if(!WA_FROM_URL){ $wa.style.display='none'; }
+    })
+    .catch(err=>{
+      $grid.innerHTML = `<div style="padding:14px">No se pudo cargar el catálogo. Sube <code>lv_catalog_products.json</code> o <code>catalog.json</code> a la raíz del repositorio.</div>`;
+      console.error(err);
+    });
+})();
+</script>
 </body>
 </html>
