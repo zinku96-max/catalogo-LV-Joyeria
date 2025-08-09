@@ -52,7 +52,7 @@
         <input id="f_cat" class="px-3 py-2 rounded-xl border border-gray-300" placeholder="Categoría" />
         <button id="addBtn" class="px-4 py-2 rounded-2xl bg-black text-white">Guardar</button>
       </div>
-      <p class="text-xs text-gray-500 mt-2">Sugerencia: sube fotos a Google Drive (públicas), Imgur o a tus propias redes y pega la URL de la imagen.</p>
+      <p class="text-xs text-gray-500 mt-2">Sugerencia: sube fotos a Google Drive (públicas), Imgur o a tus redes y pega la URL de la imagen.</p>
     </section>
 
     <!-- Grid -->
@@ -114,19 +114,18 @@
 
     function load() {
       try { state.products = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { state.products = []; }
-      // WhatsApp por localStorage o por query ?wa= (para compartir el enlace en Instagram)
+      // WhatsApp por localStorage o por query ?wa=
       const params = new URLSearchParams(location.search);
       const wa = (params.get('wa')||'').trim();
       if (wa) { state.phone = wa; localStorage.setItem(PHONE_KEY, wa); }
       whatsInput.value = state.phone || '';
 
       if (state.products.length === 0) {
-        // Si no hay datos en el navegador, intenta cargar catalog.json del mismo hosting
+        // Cargar catalog.json si existe en el mismo hosting
         fetch('catalog.json')
-          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(r => r.ok ? r.json() : Promise.reject(new Error('catalog.json no encontrado')))
           .then(json => {
             if (json && Array.isArray(json.products)) {
-              // formato simple { products: [ {title, price, image, category} ] }
               state.products = json.products.map(p => ({ id: crypto.randomUUID(), title: p.title, price: p.price, image: p.image||'', category: p.category||'' }));
               save();
             }
@@ -153,27 +152,34 @@
       // grid
       const q = (searchInput.value||'').toLowerCase();
       const c = categoryFilter.value||'';
-      const filtered = state.products.filter(p=>
-        (!q || p.title.toLowerCase().includes(q)) && (!c || (p.category||'')===c)
-      );
+      const filtered = state.products.filter(p=> (!q || (p.title||'').toLowerCase().includes(q)) && (!c || (p.category||'')===c) );
       $('#count').textContent = filtered.length;
       grid.innerHTML = '';
-      filtered.forEach(p=> grid.appendChild(card(p)) );
+      filtered.forEach(p=> {
+        try { grid.appendChild(card(p)); } catch(e) { /* nunca romper render */ }
+      });
     }
 
     function card(p){
       const tpl = document.getElementById('cardTpl');
-      const node = tpl.content.firstElementChild.cloneNode(true);
-      node.querySelector('img').src = p.image || 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=600&auto=format&fit=crop';
-      node.querySelector('img').alt = p.title;
-      node.querySelector('h3').textContent = p.title;
-      node.querySelector('div:nth-child(2)').textContent = eur(p.price);
+      const base = tpl && tpl.content ? tpl.content.firstElementChild : null;
+      const node = base ? base.cloneNode(true) : document.createElement('div');
+
+      const img = node.querySelector('img');
+      const titleEl = node.querySelector('h3');
+      const priceEl = node.querySelector('div:nth-child(2)');
+
+      if (img) { img.src = p.image || 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=600&auto=format&fit=crop'; img.alt = p.title||'Producto'; }
+      if (titleEl) titleEl.textContent = p.title || '';
+      if (priceEl) priceEl.textContent = eur(p.price);
+
       const wa = node.querySelector('.whatsBtn');
-      wa.href = whatsappLink(p);
-      wa.addEventListener('click', ()=>{});
-      node.querySelector('.editBtn').addEventListener('click', ()=> startEdit(p.id));
-      node.querySelector('.delBtn').addEventListener('click', ()=> del(p.id));
-      // Ocultar botones de edición si no hay modo admin
+      if (wa) { wa.href = whatsappLink(p); }
+      const editBtn = node.querySelector('.editBtn');
+      if (editBtn) editBtn.addEventListener('click', ()=> startEdit(p.id));
+      const delBtn = node.querySelector('.delBtn');
+      if (delBtn) delBtn.addEventListener('click', ()=> del(p.id));
+
       const tools = node.querySelectorAll('.editBtn, .delBtn');
       tools.forEach(btn => btn.classList.toggle('hidden', !adminToggle.checked));
       return node;
@@ -189,16 +195,16 @@
       const p = state.products.find(x=>x.id===id);
       if(!p) return;
       state.editingId = id;
-      f_title.value = p.title; f_price.value = p.price; f_image.value = p.image||''; f_cat.value = p.category||'';
+      f_title.value = p.title||''; f_price.value = p.price||''; f_image.value = p.image||''; f_cat.value = p.category||'';
       adminPanel.scrollIntoView({behavior:'smooth'});
     }
 
     function addOrUpdate(){
-      const title = f_title.value.trim();
+      const title = (f_title.value||'').trim();
       const price = parseFloat(f_price.value||'0');
-      const image = f_image.value.trim();
-      const category = f_cat.value.trim();
-      if(!title || price<=0) { alert('Nombre y precio son obligatorios'); return; }
+      const image = (f_image.value||'').trim();
+      const category = (f_cat.value||'').trim();
+      if(!title || !(price>0)) { alert('Nombre y precio son obligatorios'); return; }
 
       if(state.editingId){
         const i = state.products.findIndex(x=>x.id===state.editingId);
@@ -221,9 +227,7 @@
     exportBtn.addEventListener('click', ()=>{
       const blob = new Blob([JSON.stringify({ products: state.products }, null, 2)], {type:'application/json'});
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = `catalogo_lv_${Date.now()}.json`; a.click();
-      URL.revokeObjectURL(url);
+      const a = document.createElement('a'); a.href = url; a.download = `catalogo_lv_${Date.now()}.json`; a.click(); URL.revokeObjectURL(url);
     });
 
     importInput.addEventListener('change', async (e)=>{
@@ -231,9 +235,8 @@
       try {
         const text = await file.text();
         const json = JSON.parse(text);
-        // Soporta dos formatos: {products:[{title,price,image,category}]} o nuestro backup grande
-        if (Array.isArray(json.products)) {
-          if (json.settings && Array.isArray(json.products) && json.products[0] && json.products[0].baseCost !== undefined) {
+        if (json && Array.isArray(json.products)) {
+          if (json.settings && json.products[0] && json.products[0].baseCost !== undefined) {
             // backup de inventario → estimar precio = coste aterrizado x2
             const iva = Number(json.settings.iva||0); const ar = Number(json.settings.arancel||0);
             state.products = json.products.map(p=>({
@@ -248,9 +251,9 @@
           }
           save(); render();
         } else {
-          alert('JSON no reconocido.');
+          alert('JSON no reconocido. Debe contener { products: [...] }');
         }
-      } catch(err){ alert('No se pudo importar: '+err.message); }
+      } catch(err){ alert('No se pudo importar: '+(err && err.message ? err.message : err)); }
       e.target.value = '';
     });
 
