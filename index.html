@@ -68,22 +68,15 @@
   </div>
 
 <script>
-/* v4.6 (Visibilidad + Lightbox + Drive fix)
-   - Lee lv_catalog_products.json o catalog.json (sin caché)
-   - Respeta p.visible (oculta si false). Por defecto visible=true
-   - ?show=all ignora visibilidad (para revisar)
-   - Filtro categorías, búsqueda
-   - Lightbox (tap → ampliar, doble tap → zoom, arrastrar)
-*/
+/* v4.7 (Pulseras a mano + Visibilidad + Lightbox + Drive fix) */
 (function(){
   const qs = new URLSearchParams(location.search);
-  const SHOW_ALL = (qs.get('show')||'').toLowerCase()==='all';
   const RESET = qs.get('reset') === '1';
   document.getElementById('yr').textContent = new Date().getFullYear();
 
   const EUR = new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'});
 
-  // Drive helpers
+  // ---- Google Drive helpers ----
   function driveIdFromUrl(u){
     try{
       if(u.includes("/file/d/")) return u.split("/d/")[1].split("/")[0];
@@ -108,9 +101,11 @@
     img.onerror = next; next();
   }
 
+  // ---- Categorías (incluye "Pulseras a mano") ----
   function normalizeCategory(c){
     c = (c||'').toString().trim().toLowerCase();
     if(!c) return 'otros';
+    if(c.startsWith('pulseras a mano')) return 'pulseras a mano';  // NUEVA categoría
     if(c.startsWith('arete')) return 'aretes';
     if(c.startsWith('cadena')) return 'cadena';
     if(c.startsWith('collar')) return 'collar';
@@ -119,9 +114,9 @@
     return c;
   }
 
-  // Datos
+  // ---- Datos ----
   const PREFERRED = ['lv_catalog_products.json','catalog.json'];
-  const CACHE_KEY = 'lv_catalog_cache_v4';
+  const CACHE_KEY = 'lv_catalog_cache_v5';
   if(RESET){ try{localStorage.removeItem(CACHE_KEY);}catch(e){} }
   async function fetchFresh(url){
     const res = await fetch(url + (url.includes('?')?'&':'?') + 't=' + Date.now(), {cache:'no-store'});
@@ -141,7 +136,7 @@
     throw new Error('No se pudo cargar el catálogo.');
   }
 
-  // UI refs
+  // ---- UI refs ----
   const $grid = document.getElementById('grid');
   const $q = document.getElementById('q');
   const $cat = document.getElementById('cat');
@@ -156,7 +151,7 @@
     $cat.value = current;
   }
 
-  // Lightbox
+  // ---- Lightbox ----
   const $lb = document.getElementById('lightbox');
   const $lbimg = document.getElementById('lbimg');
   const $lbtitle = document.getElementById('lbtitle');
@@ -205,8 +200,8 @@
   }
 
   function applyFilters(items){
-    const term = (document.getElementById('q').value||'').trim().toLowerCase();
-    const catv = document.getElementById('cat').value;
+    const term = $q.value.trim().toLowerCase();
+    const catv = $cat.value;
     return items.filter(p=>{
       const okName = !term || (p.title||'').toLowerCase().includes(term);
       const okCat = (catv==='*') || normalizeCategory(p.category)===catv;
@@ -222,19 +217,18 @@
   }
 
   loadData().then(data=>{
-    // map + visibilidad
     let items = (data.products||[]).map(p=>({
       title: p.title || p.name || 'Producto',
       price: Number(p.price||0),
       image: p.image || '',
       category: normalizeCategory(p.category || p.categoryName || 'otros'),
-      visible: (p.visible !== false) // por defecto true
+      visible: (p.visible !== false)
     }));
-    if(!SHOW_ALL){ items = items.filter(p=> p.visible); }
-
+    // visibilidad
+    items = items.filter(p=> p.visible);
     render(items);
-    document.getElementById('q').addEventListener('input', ()=> render(items));
-    document.getElementById('cat').addEventListener('change', ()=> render(items));
+    $q.addEventListener('input', ()=> render(items));
+    $cat.addEventListener('change', ()=> render(items));
   })
   .catch(err=>{
     const $grid=document.getElementById('grid');
