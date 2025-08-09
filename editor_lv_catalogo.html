@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Editor de Catálogo — Lady Vanessa Joyería ✨ (v1.2)</title>
+<title>Editor de Catálogo — Lady Vanessa Joyería ✨ (v1.3)</title>
 <meta name="description" content="Editor visual para lv_catalog_products.json">
 <style>
   :root{ --bg:#fffbea; --card:#fff; --ink:#1b1b1b; --muted:#6b6b6b; --ring:rgba(0,0,0,.07); --accent:#111; --warn:#b00020; --ok:#008a2a; }
@@ -39,7 +39,7 @@
 </head>
 <body>
 <header>
-  <h1>Editor de Catálogo — Lady Vanessa Joyería ✨ <span class="tiny">(v1.2)</span></h1>
+  <h1>Editor de Catálogo — Lady Vanessa Joyería ✨ <span class="tiny">(v1.3)</span></h1>
   <div><span class="pill">Admin local</span> <span class="muted">Edita y descarga el JSON</span></div>
 </header>
 
@@ -58,7 +58,16 @@
     <input id="search" type="text" placeholder="Buscar…">
     <select id="filterCat"><option value="*">Todas las categorías</option></select>
     <label class="muted"><input id="showHidden" type="checkbox"> Mostrar ocultos</label>
-    <button class="btn" id="add">Añadir producto</button>
+    <select id="defaultCat">
+      <option value="pulseras a mano" selected>Pulseras a mano</option>
+      <option value="aretes">Aretes</option>
+      <option value="dije">Dije</option>
+      <option value="cadena">Cadena</option>
+      <option value="pulsera">Pulsera</option>
+      <option value="collar">Collar</option>
+      <option value="otros">Otros</option>
+    </select>
+    <button class="btn" id="add">Añadir producto (cat. por defecto)</button>
     <button class="btn secondary" id="export">Descargar JSON (con fecha)</button>
     <button class="btn secondary" id="convertDrive">🪄 Arreglar todos los links de Drive</button>
   </div>
@@ -127,6 +136,8 @@ function normalizeCategory(c){
   if(c.startsWith('pulsera')) return 'pulsera';
   return c;
 }
+
+// Drive + fallback (igual que el catálogo público)
 function driveIdFromUrl(u){
   try{
     if(u.includes('/file/d/')) return u.split('/d/')[1].split('/')[0];
@@ -134,9 +145,26 @@ function driveIdFromUrl(u){
   }catch(e){}
   return null;
 }
-function toDriveView(u){
+function imageCandidates(u){
+  if(!u) return [];
   const id = driveIdFromUrl(u);
-  return id ? `https://drive.google.com/uc?export=view&id=${id}` : u;
+  if(id){
+    return [
+      `https://drive.google.com/uc?export=view&id=${id}`,
+      `https://drive.google.com/thumbnail?id=${id}&sz=w1600`,
+      u
+    ];
+  }
+  return [u];
+}
+function setImageWithFallback(img, url){
+  const PLACEHOLDER = 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=1200&auto=format&fit=crop';
+  const cands = imageCandidates(url);
+  let i=0;
+  function next(){ if(i<cands.length){ img.src=cands[i++]; } else { img.src=PLACEHOLDER; } }
+  img.onerror = ()=>{ img.classList.add('bad'); next(); };
+  img.onload  = ()=>{ img.classList.remove('bad'); };
+  next();
 }
 function csvParsePrices(txt){
   const map = new Map();
@@ -214,12 +242,18 @@ const filterCat = document.getElementById('filterCat');
 const inputSearch = document.getElementById('search');
 const showHidden = document.getElementById('showHidden');
 const quickProduct = document.getElementById('quickProduct');
+const defaultCat = document.getElementById('defaultCat');
 
 function rebuild(){
   products.forEach(p=>{ if(p.visible === undefined) p.visible = true; if(p.stock === undefined) p.stock = 0; });
-  const set = new Set(products.map(p=> normalizeCategory(p.category)));
+  // categorías presentes + predefinidas
+  const set = new Set(['pulseras a mano','aretes','dije','cadena','pulsera','collar','otros']);
+  products.forEach(p=> set.add(normalizeCategory(p.category)));
   const arr = Array.from(set).filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
   filterCat.innerHTML = '<option value="*">Todas las categorías</option>' + arr.map(c=>`<option value="${c}">${c[0].toUpperCase()+c.slice(1)}</option>`).join('');
+  // select de nueva categoría por defecto
+  const current = defaultCat.value || 'pulseras a mano';
+  defaultCat.innerHTML = arr.map(c=>`<option value="${c}" ${c===current?'selected':''}>${c[0].toUpperCase()+c.slice(1)}</option>`).join('');
   // venta rápida select
   quickProduct.innerHTML = products.map((p,i)=>`<option value="${i}">${p.title || 'Producto'}${p.sku ? ' ['+p.sku+']':''}</option>`).join('');
   render();
@@ -255,9 +289,8 @@ function rowNode(p){
   tdVis.appendChild(vis); tr.appendChild(tdVis);
 
   const tdPrev = document.createElement('td');
-  const img = document.createElement('img'); img.className='imgprev'; img.alt=p.title||''; img.src = toDriveView(p.image || '');
-  img.onerror = ()=>{ img.classList.add('bad'); };
-  img.onload = ()=>{ img.classList.remove('bad'); };
+  const img = document.createElement('img'); img.className='imgprev'; img.alt=p.title||'';
+  setImageWithFallback(img, p.image || '');
   tdPrev.appendChild(img); tr.appendChild(tdPrev);
 
   const tdTitle = document.createElement('td');
@@ -268,8 +301,8 @@ function rowNode(p){
   const tdUrl = document.createElement('td');
   const u = document.createElement('input'); u.type='url'; u.value = p.image || ''; u.placeholder='https://...'; u.style.minWidth='360px';
   const fix = document.createElement('button'); fix.className='btn secondary'; fix.textContent='🪄 Drive';
-  fix.addEventListener('click', ()=>{ u.value = toDriveView(u.value); u.dispatchEvent(new Event('input')); });
-  u.addEventListener('input', ()=>{ products[p.index].image = u.value; img.src = toDriveView(u.value); dirty=true; });
+  fix.addEventListener('click', ()=>{ u.value = imageCandidates(u.value)[0] || u.value; u.dispatchEvent(new Event('input')); });
+  u.addEventListener('input', ()=>{ products[p.index].image = u.value; setImageWithFallback(img, u.value); dirty=true; });
   const open = document.createElement('a'); open.href = p.image || '#'; open.target='_blank'; open.textContent='↗'; open.style.marginLeft='6px';
   u.addEventListener('input', ()=>{ open.href = u.value || '#'; });
   tdUrl.appendChild(u); tdUrl.appendChild(fix); tdUrl.appendChild(open);
@@ -281,7 +314,8 @@ function rowNode(p){
   tdPrice.appendChild(pr); tr.appendChild(tdPrice);
 
   const tdCat = document.createElement('td');
-  const c = document.createElement('input'); c.type='text'; c.value = p.category || ''; c.placeholder='aretes, cadena, dije, pulsera, collar, pulseras a mano'; c.style.width='200px';
+  const c = document.createElement('input'); c.type='text'; c.value = p.category || defaultCat.value || 'pulseras a mano';
+  c.placeholder='aretes, cadena, dije, pulsera, collar, pulseras a mano'; c.style.width='200px';
   c.addEventListener('input', ()=>{ products[p.index].category = c.value; dirty=true; });
   tdCat.appendChild(c); tr.appendChild(tdCat);
 
@@ -315,7 +349,8 @@ document.getElementById('loadUrl').addEventListener('click', ()=>{
 });
 
 document.getElementById('add').addEventListener('click', ()=>{
-  products.push({ sku:'', title:'Nuevo producto', price:0, image:'', category:'otros', visible:true, stock:0 });
+  const cat = (defaultCat.value || 'pulseras a mano').toLowerCase();
+  products.push({ sku:'', title:'Nuevo producto', price:0, image:'', category:cat, visible:true, stock:0 });
   rebuild(); dirty=true;
 });
 
@@ -337,7 +372,8 @@ document.getElementById('showHidden').addEventListener('change', render);
 document.getElementById('convertDrive').addEventListener('click', ()=>{
   let changes=0;
   products.forEach(p=>{
-    const conv = toDriveView(p.image||'');
+    const cand = imageCandidates(p.image||'');
+    const conv = cand[0] || p.image;
     if(conv && conv !== p.image){ p.image = conv; changes++; }
   });
   rebuild();
