@@ -5,336 +5,384 @@
       "title": "23275 - D MANO DE FATIMA",
       "price": 15.0,
       "image": "https://www.joyeriadsanchez.com/wp-content/uploads/2023/03/WhatsApp-Image-2023-02-27-at-10.37.58-2-e1677693662700.jpeg",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "23269 - S SPECIAL LOVE",
       "price": 15.0,
       "image": "https://drive.google.com/file/d/16smHWT4_rgVYiLVNQ1x926DgHLpgOBMt/view?usp=sharing",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "23270 - D LOVELY",
       "price": 15.0,
       "image": "https://drive.google.com/uc?export=view&id=17umRbqaqs1S7LJGddWauWrDKO1NscSpj",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "23298 - DUE DOLAR",
       "price": 25.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "23172 - D CAMARA FOTOGRAFICA",
       "price": 15.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "23144 - D CRUZ MANTO SAGRADO 1.6 CMS",
       "price": 15.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "23128 AZUL - D CRUZ 6 CIRCONIAS AZUL",
       "price": 16.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "23224 - D GREEN HEART",
       "price": 23.0,
       "image": "https://drive.google.com/file/d/16smHWT4_rgVYiLVNQ1x926DgHLpgOBMt/view?usp=sharing",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "63002 - CLOVER BLANCO 1 CMS",
       "price": 15.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "34198 - CANDONGA GUCCI",
       "price": 21.0,
       "image": "",
-      "category": "Aretes"
+      "category": "Aretes",
+      "visible": true
     },
     {
       "id": null,
       "title": "34172-A - CHAI",
       "price": 25.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "34173 - CANDONGA TUB 2CM",
       "price": 21.0,
       "image": "",
-      "category": "Aretes"
+      "category": "Aretes",
+      "visible": true
     },
     {
       "id": null,
       "title": "34130 - CANDONGA 2.2 CMS",
       "price": 21.0,
       "image": "",
-      "category": "Aretes"
+      "category": "Aretes",
+      "visible": true
     },
     {
       "id": null,
       "title": "34132 - CANDONGA 2.2CM",
       "price": 21.0,
       "image": "",
-      "category": "Aretes"
+      "category": "Aretes",
+      "visible": true
     },
     {
       "id": null,
       "title": "34126 - CANDONGA STEEL 1.5CM",
       "price": 21.0,
       "image": "",
-      "category": "Aretes"
+      "category": "Aretes",
+      "visible": true
     },
     {
       "id": null,
       "title": "34121 - SLIM BLUE",
       "price": 23.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "34147 - E ARROW",
       "price": 12.0,
       "image": "",
-      "category": "Aretes"
+      "category": "Aretes",
+      "visible": true
     },
     {
       "id": null,
       "title": "34710 - A SOL REDONDO 3MM",
       "price": 12.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "34250 - A TOPO AVION",
       "price": 20.0,
       "image": "",
-      "category": "Aretes"
+      "category": "Aretes",
+      "visible": true
     },
     {
       "id": null,
       "title": "34148 - A E TRIPLE ESTRELLAS",
       "price": 16.0,
       "image": "",
-      "category": "Aretes"
+      "category": "Aretes",
+      "visible": true
     },
     {
       "id": null,
       "title": "34208 - A TOPO GUCCI FINITO",
       "price": 20.0,
       "image": "",
-      "category": "Aretes"
+      "category": "Aretes",
+      "visible": true
     },
     {
       "id": null,
       "title": "34028 - A TOPOS CORAZON MEDIANOS",
       "price": 20.0,
       "image": "",
-      "category": "Aretes"
+      "category": "Aretes",
+      "visible": true
     },
     {
       "id": null,
       "title": "34154 - A ESTRELLA DE MAR",
       "price": 15.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "34261 - A TOPO OSO T",
       "price": 23.0,
       "image": "",
-      "category": "Aretes"
+      "category": "Aretes",
+      "visible": true
     },
     {
       "id": null,
       "title": "34249 - A TOPO EQUINO",
       "price": 32.0,
       "image": "",
-      "category": "Aretes"
+      "category": "Aretes",
+      "visible": true
     },
     {
       "id": null,
       "title": "SMH-004 - H SAN MIGUEL LIBIANO HUECO OVALADO MED",
       "price": 9.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "23283 - H CORONA",
       "price": 16.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "RHM 002 - H ROLEX HUECO MEDIANO",
       "price": 12.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "VCD-001 - VAN CLEEF DORADO",
       "price": 16.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "HCM-001 - HERRAJE CABALLO",
       "price": 14.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "23264 - H CHARMING",
       "price": 9.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "VCG-005 - VAN CLEEF VRD C GRANDE",
       "price": 16.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "VCG-002 - VAN CLEEF RJ GRANDE (azul)",
       "price": 16.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "VCG-001 - VAN CLEEF NG GRANDE",
       "price": 16.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "23244 - H E TREBOL",
       "price": 16.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "SB0-002 - H SAN BENITO OREJA MEDIANO",
       "price": 12.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "MPO-001 - H MILAGROSA PEQUEÑA OREJA",
       "price": 12.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "23255 - H CIRCONIA REDONDA CRISTAL",
       "price": 8.0,
       "image": "",
-      "category": "Dije"
+      "category": "Dije",
+      "visible": true
     },
     {
       "id": null,
       "title": "42556 - C AROS 1.8MM 45CM",
       "price": 27.0,
       "image": "",
-      "category": "Cadena"
+      "category": "Cadena",
+      "visible": true
     },
     {
       "id": null,
       "title": "42886 - TEJIDO CHINO 2MM 45 CMS",
       "price": 44.0,
       "image": "",
-      "category": "Cadena"
+      "category": "Cadena",
+      "visible": true
     },
     {
       "id": null,
       "title": "40016 - Cadena CARACOL PUNTERAS 45CMS",
       "price": 23.0,
       "image": "",
-      "category": "Cadena"
+      "category": "Cadena",
+      "visible": true
     },
     {
       "id": null,
       "title": "44206 - Cadena CUBANA PLANA DIAMANTADA 2MM 45CM",
       "price": 36.0,
       "image": "",
-      "category": "Cadena"
+      "category": "Cadena",
+      "visible": true
     },
     {
       "id": null,
       "title": "43036 - GUCCI DELGADA 45 CM",
       "price": 57.0,
       "image": "",
-      "category": "Cadena"
+      "category": "Cadena",
+      "visible": true
     },
     {
       "id": null,
       "title": "44751 - DESTELLOS 2.5MM 45CMS",
       "price": 44.0,
       "image": "",
-      "category": "Cadena"
+      "category": "Cadena",
+      "visible": true
     },
     {
       "id": null,
       "title": "ESCALERA DELGADA PLANA 65 cms",
       "price": 53.0,
       "image": "",
-      "category": "Cadena"
+      "category": "Cadena",
+      "visible": true
     },
     {
       "id": null,
       "title": "40008 - Cadena 3*1 DIAMANTADA 65CMS 3 MM",
       "price": 57.0,
       "image": "",
-      "category": "Cadena"
+      "category": "Cadena",
+      "visible": true
     },
     {
       "id": null,
       "title": "50057 - Pulsera 3*1 DIAMANTADA 20 CMS 3.5MM",
       "price": 23.0,
       "image": "",
-      "category": "Pulsera"
+      "category": "Pulsera",
+      "visible": true
     },
     {
       "id": null,
       "title": "50011 - Pulsera FRANCO FINITA 16CMS + EXTENSOR",
       "price": 20.0,
       "image": "",
-      "category": "Pulsera"
+      "category": "Pulsera",
+      "visible": true
     }
   ]
 }
