@@ -149,6 +149,24 @@
       categoryFilter.value = has ? selected : '';
     }
 
+    function resolveImage(u){
+      if(!u) return "";
+      try {
+        // /file/d/ID/view...
+        if (u.includes("drive.google.com/file/d/")) {
+          const id = u.split("/d/")[1]?.split("/")[0];
+          if (id) return `https://drive.google.com/uc?export=view&id=${id}`;
+        }
+        // open?id=ID
+        if (u.includes("drive.google.com") && u.includes("?")) {
+          const url = new URL(u);
+          const id = url.searchParams.get("id");
+          if (id) return `https://drive.google.com/uc?export=view&id=${id}`;
+        }
+      } catch {}
+      return u;
+    }
+
     function render(){
       const selectedBefore = categoryFilter.value; // guardar selección
       buildCategories(selectedBefore);            // reconstruir opciones pero conservar selección
@@ -327,7 +345,7 @@
         const node = tpl.cloneNode(true);
         node.querySelector('h3').textContent = p.title||'';
         const img = node.querySelector('img');
-        img.src = p.image || 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=600&auto=format&fit=crop';
+        img.src = resolveImage(p.image) || 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=600&auto=format&fit=crop';
         img.alt = p.title||'Producto';
         node.querySelector('div.text-amber-700').textContent = eur(p.price);
         const phone = (whatsInput.value||'').replace(/\D/g,'');
