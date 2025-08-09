@@ -27,6 +27,8 @@
   .cta.secondary{background:#fff;color:#111}
   footer{margin:28px 0 12px;color:var(--muted);font-size:14px}
   .pill{display:inline-block;background:#111;color:#fff;border-radius:999px;padding:2px 8px;font-size:12px;margin-left:8px}
+
+  /* Lightbox */
   .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:9999}
   .lightbox.open{display:flex}
   .lb-inner{position:relative;max-width:100vw;max-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -34,8 +36,6 @@
   .lb-img.zoomed{cursor:grab}
   .lb-close{position:absolute;top:14px;right:14px;border:none;border-radius:999px;background:rgba(255,255,255,.15);color:#fff;width:40px;height:40px;font-size:22px;line-height:40px;text-align:center;cursor:pointer}
   .lb-title{position:absolute;left:16px;bottom:16px;color:#fff;font-size:14px;background:rgba(0,0,0,.35);padding:6px 10px;border-radius:8px;max-width:80vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .error{background:#fff3f3;border:1px solid #ffd2d2;color:#8a0000;border-radius:12px;padding:12px;margin-top:14px}
-  .error code{background:#ffecec;padding:2px 6px;border-radius:6px}
 </style>
 </head>
 <body>
@@ -53,7 +53,6 @@
       <div class="count" id="count">Resultados: 0</div>
     </section>
 
-    <section id="err" class="error" style="display:none"></section>
     <section class="grid" id="grid" aria-live="polite"></section>
 
     <footer>© <span id="yr"></span> Lady Vanessa Joyería ✨ — Solo catálogo (sin pagos). Contacto por WhatsApp.</footer>
@@ -69,19 +68,22 @@
   </div>
 
 <script>
-/* v4.5.1 (debug):
-   - Muestra errores de carga (qué JSON intentó y qué pasó)
-   - Forzar archivo con ?json=archivo.json
-   - reset caché: ?reset=1
+/* v4.6 (Visibilidad + Lightbox + Drive fix)
+   - Lee lv_catalog_products.json o catalog.json (sin caché)
+   - Respeta p.visible (oculta si false). Por defecto visible=true
+   - ?show=all ignora visibilidad (para revisar)
+   - Filtro categorías, búsqueda
+   - Lightbox (tap → ampliar, doble tap → zoom, arrastrar)
 */
 (function(){
   const qs = new URLSearchParams(location.search);
+  const SHOW_ALL = (qs.get('show')||'').toLowerCase()==='all';
   const RESET = qs.get('reset') === '1';
   document.getElementById('yr').textContent = new Date().getFullYear();
 
   const EUR = new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'});
 
-  // ----- Drive helpers -----
+  // Drive helpers
   function driveIdFromUrl(u){
     try{
       if(u.includes("/file/d/")) return u.split("/d/")[1].split("/")[0];
@@ -92,22 +94,20 @@
   function imageCandidates(u){
     if(!u) return [];
     const id = driveIdFromUrl(u);
-    if(id){
-      return [
-        `https://drive.google.com/uc?export=view&id=${id}`,
-        `https://drive.google.com/thumbnail?id=${id}&sz=w1600`,
-        u
-      ];
-    }
+    if(id){ return [
+      `https://drive.google.com/uc?export=view&id=${id}`,
+      `https://drive.google.com/thumbnail?id=${id}&sz=w1600`,
+      u
+    ]; }
     return [u];
   }
   function setImageWithFallback(img, url){
     const PLACEHOLDER = 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=1200&auto=format&fit=crop';
-    const cands = imageCandidates(url);
-    let i = 0;
-    function tryNext(){ if(i < cands.length){ img.src = cands[i++]; } else { img.src = PLACEHOLDER; } }
-    img.onerror = tryNext; tryNext();
+    const cands = imageCandidates(url); let i=0;
+    function next(){ if(i<cands.length){ img.src=cands[i++]; } else { img.src=PLACEHOLDER; } }
+    img.onerror = next; next();
   }
+
   function normalizeCategory(c){
     c = (c||'').toString().trim().toLowerCase();
     if(!c) return 'otros';
@@ -119,46 +119,36 @@
     return c;
   }
 
-  // ----- Datos + debug -----
-  const forced = (qs.get('json')||'').trim();
-  const PREFERRED = forced ? [forced] : ['lv_catalog_products.json','catalog.json'];
-  const CACHE_KEY = 'lv_catalog_cache_v3';
-  const $err = document.getElementById('err');
+  // Datos
+  const PREFERRED = ['lv_catalog_products.json','catalog.json'];
+  const CACHE_KEY = 'lv_catalog_cache_v4';
   if(RESET){ try{localStorage.removeItem(CACHE_KEY);}catch(e){} }
-
   async function fetchFresh(url){
-    const full = url + (url.includes('?')?'&':'?') + 't=' + Date.now();
-    const res = await fetch(full, {cache:'no-store'});
-    if(!res.ok) throw new Error(`HTTP ${res.status} al pedir ${url}`);
+    const res = await fetch(url + (url.includes('?')?'&':'?') + 't=' + Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status+' al pedir '+url);
     return res.json();
   }
-
   async function loadData(){
-    const attempts = [];
     for(const p of PREFERRED){
       try{
         const data = await fetchFresh(p);
         try{ localStorage.setItem(CACHE_KEY, JSON.stringify(data)); }catch(e){}
-        return {data, attempts};
-      }catch(e){
-        attempts.push(String(e.message||e));
-      }
+        return data;
+      }catch(e){}
     }
     const raw = localStorage.getItem(CACHE_KEY);
-    if(raw) return {data: JSON.parse(raw), attempts};
-    const errMsg = `No se pudo cargar el catálogo. Intentos: ${PREFERRED.join(' → ')}. Errores: ${attempts.join(' | ')}`;
-    throw new Error(errMsg);
+    if(raw) return JSON.parse(raw);
+    throw new Error('No se pudo cargar el catálogo.');
   }
 
-  // ----- UI -----
+  // UI refs
   const $grid = document.getElementById('grid');
   const $q = document.getElementById('q');
   const $cat = document.getElementById('cat');
   const $count = document.getElementById('count');
 
   function buildCategories(items){
-    const set = new Set();
-    items.forEach(p=> set.add(normalizeCategory(p.category)));
+    const set = new Set(); items.forEach(p=> set.add(normalizeCategory(p.category)));
     const arr = Array.from(set).filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
     const current = $cat.value || '*';
     $cat.innerHTML = '<option value="*">Todas las categorías</option>' +
@@ -175,7 +165,7 @@
 
   function openLightbox(url, title){
     $lbtitle.textContent = title || '';
-    $lbimg.style.transform = 'translate(0px,0px) scale(1)';
+    $lbimg.style.transform='translate(0px,0px) scale(1)';
     imgX=imgY=0; zoomed=false; $lbimg.classList.remove('zoomed');
     setImageWithFallback($lbimg, url);
     $lb.classList.add('open'); $lb.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden';
@@ -184,7 +174,7 @@
   function onPointerDown(e){ if(!zoomed)return; const pt=e.touches?e.touches[0]:e; startX=pt.clientX-imgX; startY=pt.clientY-imgY; $lbimg.style.cursor='grabbing'; }
   function onPointerMove(e){ if(!zoomed)return; if(!(e.buttons===1||(e.touches&&e.touches.length)))return; const pt=e.touches?e.touches[0]:e; imgX=pt.clientX-startX; imgY=pt.clientY-startY; $lbimg.style.transform=`translate(${imgX}px, ${imgY}px) scale(2)`; }
   function onPointerUp(){ $lbimg.style.cursor='grab'; }
-  function onTap(e){ const now=Date.now(); if(now-lastTap<300){ zoomed=!zoomed; if(zoomed){ $lbimg.classList.add('zoomed'); $lbimg.style.transform='translate(0px,0px) scale(2)'; imgX=imgY=0; }else{ $lbimg.classList.remove('zoomed'); $lbimg.style.transform='translate(0px,0px) scale(1)'; } e.preventDefault(); } lastTap=now; }
+  function onTap(e){ const now=Date.now(); if(now-lastTap<300){ zoomed=!zoomed; if(zoomed){ $lbimg.classList.add('zoomed'); $lbimg.style.transform='translate(0px,0px) scale(2)'; imgX=imgY=0; } else { $lbimg.classList.remove('zoomed'); $lbimg.style.transform='translate(0px,0px) scale(1)'; } e.preventDefault(); } lastTap=now; }
   $lb.addEventListener('click', (e)=>{ if(e.target===$lb) closeLightbox(); });
   $lbclose.addEventListener('click', closeLightbox);
   document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeLightbox(); });
@@ -225,45 +215,32 @@
   }
 
   function render(items){
-    // categorías
-    const set = new Set(); items.forEach(p=> set.add(normalizeCategory(p.category)));
-    const arr = Array.from(set).filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
-    const $cat = document.getElementById('cat'); const current = $cat.value || '*';
-    $cat.innerHTML = '<option value="*">Todas las categorías</option>' + arr.map(c=>`<option value="${c}">${c[0].toUpperCase()+c.slice(1)}</option>`).join('');
-    $cat.value = current;
-
+    buildCategories(items);
     const filtered = applyFilters(items);
-    const $grid = document.getElementById('grid'); $grid.innerHTML='';
-    filtered.forEach(p=> $grid.appendChild(productNode(p)));
-    document.getElementById('count').textContent = `Resultados: ${filtered.length}`;
+    $grid.innerHTML=''; filtered.forEach(p=> $grid.appendChild(productNode(p)));
+    $count.textContent = `Resultados: ${filtered.length}`;
   }
 
-  // ----- Carga + debug -----
-  loadData()
-    .then(({data, attempts})=>{
-      const items = (data.products||[]).map(p=>({
-        title: p.title || p.name || 'Producto',
-        price: Number(p.price||0),
-        image: p.image || '',
-        category: normalizeCategory(p.category || p.categoryName || 'otros')
-      }));
-      render(items);
-      document.getElementById('q').addEventListener('input', ()=> render(items));
-      document.getElementById('cat').addEventListener('change', ()=> render(items));
-      // oculta caja de error si venía de antes
-      const $err=document.getElementById('err'); $err.style.display='none'; $err.innerHTML='';
-    })
-    .catch(e=>{
-      const $err = document.getElementById('err');
-      $err.style.display='block';
-      $err.innerHTML = `
-        <strong>No se pudo cargar el catálogo</strong><br>
-        Intenté: <code>${(forced?forced:('lv_catalog_products.json → catalog.json'))}</code><br>
-        Error: <code>${(e && (e.message||e))}</code><br><br>
-        Comprueba que el archivo JSON esté en la <u>misma carpeta</u> que este index.html y que el nombre sea correcto.
-      `;
-      console.error(e);
-    });
+  loadData().then(data=>{
+    // map + visibilidad
+    let items = (data.products||[]).map(p=>({
+      title: p.title || p.name || 'Producto',
+      price: Number(p.price||0),
+      image: p.image || '',
+      category: normalizeCategory(p.category || p.categoryName || 'otros'),
+      visible: (p.visible !== false) // por defecto true
+    }));
+    if(!SHOW_ALL){ items = items.filter(p=> p.visible); }
+
+    render(items);
+    document.getElementById('q').addEventListener('input', ()=> render(items));
+    document.getElementById('cat').addEventListener('change', ()=> render(items));
+  })
+  .catch(err=>{
+    const $grid=document.getElementById('grid');
+    $grid.innerHTML = `<div style="padding:14px">No se pudo cargar el catálogo. Sube <code>lv_catalog_products.json</code> o <code>catalog.json</code> a la raíz del repositorio.</div>`;
+    console.error(err);
+  });
 })();
 </script>
 </body>
