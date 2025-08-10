@@ -6,7 +6,7 @@
 <title>Lady Vanessa Joyería ✨ — Catálogo</title>
 <meta name="description" content="Catálogo de Lady Vanessa Joyería ✨ · Oro laminado 18K · Donostia">
 <style>
-  :root{ --bg:#fffbea; --card:#ffffff; --ink:#1b1b1b; --muted:#6b6b6b; --ring:rgba(0,0,0,.07); }
+  :root{ --bg:#fffbea; --card:#ffffff; --ink:#1b1b1b; --muted:#6b6b6b; --ring:rgba(0,0,0,.07); --dark:#111; }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
   .wrap{max-width:1100px;margin:auto;padding:24px}
@@ -19,14 +19,21 @@
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:16px}
   .card{background:var(--card);border-radius:14px;box-shadow:0 8px 20px var(--ring);overflow:hidden;display:flex;flex-direction:column}
   .card h3{margin:12px 12px 0 12px;font-size:16px}
-  .thumb{aspect-ratio:1/1;background:#f6f6f6;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in}
+  .thumb{position:relative;aspect-ratio:1/1;background:#f6f6f6;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in}
   .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb.out img{filter:grayscale(1) brightness(.88)}
+  .badge{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.85);color:#fff;padding:6px 10px;border-radius:10px;font-size:12px}
+  /* Banda diagonal para "Pulseras a mano" vendidas */
+  .ribbon{position:absolute;top:14px;right:-44px;transform:rotate(45deg);background:rgba(0,0,0,.92);color:#fff;
+          padding:7px 58px;font-size:12px;font-weight:700;letter-spacing:.2px;text-transform:uppercase;
+          box-shadow:0 6px 14px rgba(0,0,0,.25);pointer-events:none;white-space:nowrap}
   .meta{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 12px}
   .price{font-weight:700}
-  .cta{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:9px 12px;border:1px solid #e5e5e5;background:#111;color:#fff;text-decoration:none}
+  .stock{color:var(--muted);font-size:12px}
+  .cta{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:9px 12px;border:1px solid #e5e5e5;background:var(--dark);color:#fff;text-decoration:none}
   .cta.secondary{background:#fff;color:#111}
+  .cta[disabled]{opacity:.5;pointer-events:none;cursor:not-allowed;filter:grayscale(1)}
   footer{margin:28px 0 12px;color:var(--muted);font-size:14px}
-  .pill{display:inline-block;background:#111;color:#fff;border-radius:999px;padding:2px 8px;font-size:12px;margin-left:8px}
 
   /* Lightbox */
   .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:9999}
@@ -68,15 +75,12 @@
   </div>
 
 <script>
-/* v4.7 (Pulseras a mano + Visibilidad + Lightbox + Drive fix) */
+/* v4.8.2 — Banda diagonal para Pulseras a mano (Vendido, pide la tuya) + Agotado resto + Drive/proxy fallback */
 (function(){
-  const qs = new URLSearchParams(location.search);
-  const RESET = qs.get('reset') === '1';
   document.getElementById('yr').textContent = new Date().getFullYear();
-
   const EUR = new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'});
 
-  // ---- Google Drive helpers ----
+  // ---- Drive + Proxy helpers ----
   function driveIdFromUrl(u){
     try{
       if(u.includes("/file/d/")) return u.split("/d/")[1].split("/")[0];
@@ -84,15 +88,22 @@
     }catch(e){}
     return null;
   }
+  function toProxy(u){
+    try{
+      const noScheme = u.replace(/^https?:\/\//,'');
+      return 'https://images.weserv.nl/?url=' + encodeURIComponent(noScheme) + '&w=1200&n=-1';
+    }catch(e){ return u; }
+  }
   function imageCandidates(u){
     if(!u) return [];
     const id = driveIdFromUrl(u);
     if(id){ return [
       `https://drive.google.com/uc?export=view&id=${id}`,
       `https://drive.google.com/thumbnail?id=${id}&sz=w1600`,
-      u
+      u,
+      toProxy(u)
     ]; }
-    return [u];
+    return [u, toProxy(u)];
   }
   function setImageWithFallback(img, url){
     const PLACEHOLDER = 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?q=80&w=1200&auto=format&fit=crop';
@@ -101,11 +112,11 @@
     img.onerror = next; next();
   }
 
-  // ---- Categorías (incluye "Pulseras a mano") ----
+  // ---- Categorías (con "Pulseras a mano") ----
   function normalizeCategory(c){
     c = (c||'').toString().trim().toLowerCase();
     if(!c) return 'otros';
-    if(c.startsWith('pulseras a mano')) return 'pulseras a mano';  // NUEVA categoría
+    if(c.startsWith('pulseras a mano')) return 'pulseras a mano';
     if(c.startsWith('arete')) return 'aretes';
     if(c.startsWith('cadena')) return 'cadena';
     if(c.startsWith('collar')) return 'collar';
@@ -113,11 +124,14 @@
     if(c.startsWith('pulsera')) return 'pulsera';
     return c;
   }
+  function titleCase(s){ return s ? s[0].toUpperCase()+s.slice(1) : s; }
+  function sortCatsWithPriority(arr){
+    const prio = (c)=> c==='pulseras a mano' ? 0 : 1;
+    return arr.sort((a,b)=> (prio(a)-prio(b)) || a.localeCompare(b,'es'));
+  }
 
   // ---- Datos ----
   const PREFERRED = ['lv_catalog_products.json','catalog.json'];
-  const CACHE_KEY = 'lv_catalog_cache_v5';
-  if(RESET){ try{localStorage.removeItem(CACHE_KEY);}catch(e){} }
   async function fetchFresh(url){
     const res = await fetch(url + (url.includes('?')?'&':'?') + 't=' + Date.now(), {cache:'no-store'});
     if(!res.ok) throw new Error('HTTP '+res.status+' al pedir '+url);
@@ -125,14 +139,8 @@
   }
   async function loadData(){
     for(const p of PREFERRED){
-      try{
-        const data = await fetchFresh(p);
-        try{ localStorage.setItem(CACHE_KEY, JSON.stringify(data)); }catch(e){}
-        return data;
-      }catch(e){}
+      try{ return await fetchFresh(p); }catch(e){}
     }
-    const raw = localStorage.getItem(CACHE_KEY);
-    if(raw) return JSON.parse(raw);
     throw new Error('No se pudo cargar el catálogo.');
   }
 
@@ -141,15 +149,6 @@
   const $q = document.getElementById('q');
   const $cat = document.getElementById('cat');
   const $count = document.getElementById('count');
-
-  function buildCategories(items){
-    const set = new Set(); items.forEach(p=> set.add(normalizeCategory(p.category)));
-    const arr = Array.from(set).filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
-    const current = $cat.value || '*';
-    $cat.innerHTML = '<option value="*">Todas las categorías</option>' +
-      arr.map(c=>`<option value="${c}">${c[0].toUpperCase()+c.slice(1)}</option>`).join('');
-    $cat.value = current;
-  }
 
   // ---- Lightbox ----
   const $lb = document.getElementById('lightbox');
@@ -181,15 +180,28 @@
   $lbimg.addEventListener('touchend', onPointerUp,{passive:true});
   $lbimg.addEventListener('click', onTap);
 
+  // ---- Render ----
   function productNode(p){
+    const cat = normalizeCategory(p.category);
+    const out = (Number.isFinite(p.stock) && p.stock<=0);
     const node = document.createElement('article');
     node.className = 'card';
     node.innerHTML = `
       <h3 title="${p.title.replace(/"/g,'&quot;')}">${p.title}</h3>
-      <div class="thumb"><img alt="${p.title}"></div>
+      <div class="thumb ${out?'out':''}">
+        <img alt="${p.title}">
+        ${out
+          ? (cat==='pulseras a mano'
+              ? '<div class="ribbon">Vendido, pide la tuya</div>'
+              : '<span class="badge">Agotado</span>')
+          : ''}
+      </div>
       <div class="meta">
-        <div class="price">${EUR.format(p.price||0)}</div>
-        <a class="cta secondary" href="#" aria-label="Copiar info"><span>Copiar info</span></a>
+        <div>
+          <div class="price">${EUR.format(p.price||0)}</div>
+          ${Number.isFinite(p.stock) ? `<div class="stock">Stock: ${p.stock}</div>`:''}
+        </div>
+        <button class="cta secondary" ${out?'disabled':''} aria-label="Copiar info"><span>Copiar info</span></button>
       </div>`;
     const img = node.querySelector('img');
     setImageWithFallback(img, p.image);
@@ -197,6 +209,19 @@
     const btn = node.querySelector('.cta');
     btn.addEventListener('click',(e)=>{ e.preventDefault(); const txt=`${p.title} — ${EUR.format(p.price||0)}`; navigator.clipboard?.writeText(txt); btn.innerHTML='Copiado ✓'; setTimeout(()=>{ btn.innerHTML='Copiar info'; },1200); });
     return node;
+  }
+
+  function buildCategories(items){
+    const set = new Set();
+    items.forEach(p=> set.add(normalizeCategory(p.category)));
+    const arr = (function sortCats(arr){
+      const prio = c=> c==='pulseras a mano' ? 0 : 1;
+      return arr.sort((a,b)=> (prio(a)-prio(b)) || a.localeCompare(b,'es'));
+    })(Array.from(set).filter(Boolean));
+    const current = $cat.value || '*';
+    $cat.innerHTML = '<option value="*">Todas las categorías</option>' +
+      arr.map(c=>`<option value="${c}">${c[0].toUpperCase()+c.slice(1)}</option>`).join('');
+    $cat.value = current;
   }
 
   function applyFilters(items){
@@ -222,17 +247,17 @@
       price: Number(p.price||0),
       image: p.image || '',
       category: normalizeCategory(p.category || p.categoryName || 'otros'),
-      visible: (p.visible !== false)
+      visible: (p.visible !== false),
+      stock: (p.stock===0 ? 0 : (Number.isFinite(+p.stock)? +p.stock : null))
     }));
-    // visibilidad
     items = items.filter(p=> p.visible);
     render(items);
     $q.addEventListener('input', ()=> render(items));
     $cat.addEventListener('change', ()=> render(items));
   })
   .catch(err=>{
-    const $grid=document.getElementById('grid');
-    $grid.innerHTML = `<div style="padding:14px">No se pudo cargar el catálogo. Sube <code>lv_catalog_products.json</code> o <code>catalog.json</code> a la raíz del repositorio.</div>`;
+    document.getElementById('grid').innerHTML =
+      `<div style="padding:14px">No se pudo cargar el catálogo. Sube <code>lv_catalog_products.json</code> o <code>catalog.json</code> a la raíz del repositorio.</div>`;
     console.error(err);
   });
 })();
