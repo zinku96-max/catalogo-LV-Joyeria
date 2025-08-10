@@ -21,10 +21,10 @@
   .card h3{margin:12px 12px 0 12px;font-size:16px}
   .thumb{position:relative;aspect-ratio:1/1;background:#f6f6f6;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in}
   .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-  /* Quitamos el B/N cuando no hay stock */
+  /* Sin B/N cuando no hay stock */
   .thumb.out img{filter:none}
   .badge{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.85);color:#fff;padding:6px 10px;border-radius:10px;font-size:12px}
-  /* Cinta diagonal centrada (no se corta) para Pulseras a mano */
+  /* Cinta diagonal centrada para Pulseras a mano */
   .ribbon{
     position:absolute; top:12px; left:50%;
     transform:translateX(-50%) rotate(45deg);
@@ -34,7 +34,6 @@
   }
   .meta{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 12px}
   .price{font-weight:700}
-  .stock{color:var(--muted);font-size:12px}
   .cta{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:9px 12px;border:1px solid #e5e5e5;background:var(--dark);color:#fff;text-decoration:none}
   .cta.secondary{background:#fff;color:#111}
   .cta[disabled]{opacity:.5;pointer-events:none;cursor:not-allowed;filter:grayscale(1)}
@@ -80,7 +79,7 @@
   </div>
 
 <script>
-/* v4.8.3 — Sin B/N en agotados + cinta diagonal centrada para Pulseras a mano + Drive/proxy fallback */
+/* v4.8.4 — Oculta el stock en la tarjeta + cinta diagonal para Pulseras a mano + Drive/proxy fallback */
 (function(){
   document.getElementById('yr').textContent = new Date().getFullYear();
   const EUR = new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'});
@@ -202,10 +201,7 @@
           : ''}
       </div>
       <div class="meta">
-        <div>
-          <div class="price">${EUR.format(p.price||0)}</div>
-          ${Number.isFinite(p.stock) ? `<div class="stock">Stock: ${p.stock}</div>`:''}
-        </div>
+        <div><div class="price">${EUR.format(p.price||0)}</div></div>
         <button class="cta secondary" ${out?'disabled':''} aria-label="Copiar info"><span>Copiar info</span></button>
       </div>`;
     const img = node.querySelector('img');
