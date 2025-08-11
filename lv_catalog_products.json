@@ -231,7 +231,7 @@
       "price": 9,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
@@ -240,7 +240,7 @@
       "price": 16,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
@@ -249,7 +249,7 @@
       "price": 12,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
@@ -258,7 +258,7 @@
       "price": 16,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
@@ -267,7 +267,7 @@
       "price": 14,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
@@ -276,7 +276,7 @@
       "price": 9,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
@@ -285,7 +285,7 @@
       "price": 16,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
@@ -294,7 +294,7 @@
       "price": 16,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
@@ -303,7 +303,7 @@
       "price": 16,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
@@ -312,7 +312,7 @@
       "price": 16,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
@@ -321,16 +321,16 @@
       "price": 12,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
       "id": null,
-      "title": "MPO-001 - H MILAGROSA PEQUEÑA OREJA",
+      "title": "MPO-001 - H MILAGROSA PEQUEÃA OREJA",
       "price": 12,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
@@ -339,7 +339,7 @@
       "price": 8,
       "image": "",
       "category": "Dije",
-      "visible": true,
+      "visible": false,
       "stock": 0
     },
     {
